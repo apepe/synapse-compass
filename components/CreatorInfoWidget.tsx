@@ -69,12 +69,6 @@ export default function CreatorInfoWidget({ creatorInfo, createdOn, annotations 
                   </span>
                 </div>
               </div>
-                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                  <span className="text-gray-600 text-sm font-medium">
-                    {(creatorInfo.displayName || creatorInfo.userName).charAt(0).toUpperCase()}
-                  </span>
-                </div>
-              )}
               <div>
                 <a
                   href={`https://www.synapse.org/#!Profile:${creatorInfo.id}`}
