@@ -87,6 +87,9 @@ export default function FolderTree({
     }
   }
 
+  // Filter out the parent from siblings (don't show it twice)
+  const filteredSiblings = siblings.filter(s => s.id !== parentId)
+  
   const allItems: EntityWithFlags[] = [
     ...(parentId && parentName ? [{
       id: parentId,
@@ -94,7 +97,7 @@ export default function FolderTree({
       type: 'org.sagebionetworks.repo.model.Folder',
       isParent: true,
     } as EntityWithFlags] : []),
-    ...siblings.map(s => ({
+    ...filteredSiblings.map(s => ({
       ...s,
       isCurrent: s.id === currentEntityId,
     } as EntityWithFlags)),
@@ -139,17 +142,28 @@ export default function FolderTree({
                 className={`flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors ${
                   item.isParent
                     ? 'bg-blue-50 border border-blue-200'
+                    : item.isCurrent
+                    ? 'bg-blue-50 border border-blue-200'
                     : 'hover:bg-gray-50'
                 }`}
               >
                 {getFileIcon(item.name, item.type)}
                 <span className={`text-sm flex-1 ${
-                  item.isParent ? 'text-blue-700 font-medium' : 'text-gray-700'
+                  item.isParent 
+                    ? 'text-blue-700 font-medium' 
+                    : item.isCurrent
+                    ? 'text-blue-700 font-semibold'
+                    : 'text-gray-700'
                 }`}>
                   {item.name}
                 </span>
                 {item.isParent && (
                   <span className="text-xs text-blue-600">Parent</span>
+                )}
+                {item.isCurrent && !item.isParent && (
+                  <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded font-medium">
+                    Current
+                  </span>
                 )}
               </div>
             ))}
