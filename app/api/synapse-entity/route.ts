@@ -427,7 +427,36 @@ export async function GET(request: NextRequest) {
                   const childAnnotations = await childAnnotationsResponse.json()
                   
                   // Extract citations and mentions
-                  if (childAnnotations.stringAnnotations) {
+                  // Check annotations2 format: { annotations: { "citation": { value: [...] }, "mention": { value: [...] } } }
+                  if (childAnnotations.annotations) {
+                    const annotationKeys = Object.keys(childAnnotations.annotations)
+                    for (const key of annotationKeys) {
+                      const keyLower = key.toLowerCase()
+                      if (keyLower === 'citation' || keyLower === 'mention') {
+                        const ann = childAnnotations.annotations[key]
+                        if (ann && ann.value && Array.isArray(ann.value) && ann.value.length > 0) {
+                          citations.push(...ann.value)
+                        }
+                      }
+                    }
+                  }
+                  
+                  // Check annotations format: { stringAnnotations: { "citation": [...], "mention": [...] } }
+                  if (childAnnotations.stringAnnotations && typeof childAnnotations.stringAnnotations === 'object') {
+                    const stringAnnKeys = Object.keys(childAnnotations.stringAnnotations)
+                    for (const key of stringAnnKeys) {
+                      const keyLower = key.toLowerCase()
+                      if (keyLower === 'citation' || keyLower === 'mention') {
+                        const values = childAnnotations.stringAnnotations[key]
+                        if (Array.isArray(values) && values.length > 0) {
+                          citations.push(...values)
+                        }
+                      }
+                    }
+                  }
+                  
+                  // Also check stringAnnotations array format (legacy)
+                  if (Array.isArray(childAnnotations.stringAnnotations)) {
                     const citationAnn = childAnnotations.stringAnnotations.find((ann: any) => 
                       ann.key && (ann.key.toLowerCase() === 'citation' || ann.key.toLowerCase() === 'mention')
                     )
