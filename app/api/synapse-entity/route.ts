@@ -284,33 +284,34 @@ export async function GET(request: NextRequest) {
       
       // Fetch children of the direct parent folder
       if (parentId) {
-      try {
-        // Fetch children of the parent folder using POST endpoint
-        const childrenResponse = await fetch(`${baseUrl}/entity/children`, {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            parentId: parentId,
-            includeTypes: ['file', 'folder', 'project', 'table', 'link']
-          }),
-        })
-        
-        if (childrenResponse.ok) {
-          const childrenData = await childrenResponse.json()
-          if (childrenData.page && Array.isArray(childrenData.page)) {
-            siblings = childrenData.page.map((child: any) => ({
-              id: child.id,
-              name: child.name || 'Unknown',
-              type: child.type || 'Unknown'
-            }))
+        try {
+          // Fetch children of the parent folder using POST endpoint
+          const childrenResponse = await fetch(`${baseUrl}/entity/children`, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              parentId: parentId,
+              includeTypes: ['file', 'folder', 'project', 'table', 'link']
+            }),
+          })
+          
+          if (childrenResponse.ok) {
+            const childrenData = await childrenResponse.json()
+            if (childrenData.page && Array.isArray(childrenData.page)) {
+              siblings = childrenData.page.map((child: any) => ({
+                id: child.id,
+                name: child.name || 'Unknown',
+                type: child.type || 'Unknown'
+              }))
+            }
           }
+        } catch (err) {
+          console.error('Error fetching parent or sibling entities:', err)
+          // Don't fail the whole request if fetch fails
         }
-      } catch (err) {
-        console.error('Error fetching parent or sibling entities:', err)
-        // Don't fail the whole request if fetch fails
       }
     }
     
