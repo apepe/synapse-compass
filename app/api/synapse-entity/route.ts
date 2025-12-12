@@ -65,6 +65,71 @@ export async function GET(request: NextRequest) {
 
     const entityData = await entityResponse.json()
     
+    // Fetch creator information
+    let creatorInfo: { id: string; userName: string; displayName: string | null; profilePicUrl: string | null } | null = null
+    if (entityData.createdBy) {
+      try {
+        const creatorResponse = await fetch(`${baseUrl}/userProfile/${entityData.createdBy}`, {
+          headers: {
+            'Accept': 'application/json',
+          },
+        })
+        if (creatorResponse.ok) {
+          const creatorData = await creatorResponse.json()
+          creatorInfo = {
+            id: creatorData.ownerId || entityData.createdBy,
+            userName: creatorData.userName || 'Unknown',
+            displayName: creatorData.firstName && creatorData.lastName 
+              ? `${creatorData.firstName} ${creatorData.lastName}` 
+              : creatorData.displayName || null,
+            profilePicUrl: creatorData.profilePicureFileHandleId 
+              ? `https://www.synapse.org/portal/ProfileImage/${creatorData.profilePicureFileHandleId}`
+              : null,
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching creator info:', err)
+      }
+    }
+    
+    // Fetch annotations (may contain DOI, citations, etc.)
+    let annotations: Record<string, any> | null = null
+    try {
+      const annotationsResponse = await fetch(`${baseUrl}/entity/${synId}/annotations2`, {
+        headers: {
+          'Accept': 'application/json',
+        },
+      })
+      if (annotationsResponse.ok) {
+        const annotationsData = await annotationsResponse.json()
+        annotations = annotationsData
+      }
+    } catch (err) {
+      console.error('Error fetching annotations:', err)
+    }
+    
+    // Fetch access information
+    let accessInfo: { canView: boolean; canEdit: boolean; canDownload: boolean; accessControlList: any[] } | null = null
+    try {
+      const aclResponse = await fetch(`${baseUrl}/entity/${synId}/acl`, {
+        headers: {
+          'Accept': 'application/json',
+        },
+      })
+      if (aclResponse.ok) {
+        const aclData = await aclResponse.json()
+        accessInfo = {
+          canView: true, // If we got the entity, we can view it
+          canEdit: false, // Would need to check permissions
+          canDownload: false, // Would need to check permissions
+          accessControlList: aclData.resourceAccess || [],
+        }
+      }
+    } catch (err) {
+      // ACL might not be accessible, that's okay
+      console.error('Error fetching ACL:', err)
+    }
+    
     // Fetch sibling entities (children of the parent folder)
     let siblings: Array<{ id: string; name: string; type: string }> = []
     let parentName: string | null = null
@@ -189,6 +254,10 @@ export async function GET(request: NextRequest) {
       description: entityData.description || null,
       createdOn: entityData.createdOn || null,
       modifiedOn: entityData.modifiedOn || null,
+      createdBy: entityData.createdBy || null,
+      creatorInfo: creatorInfo,
+      annotations: annotations,
+      accessInfo: accessInfo,
       parentId: parentId || null,
       parentName: parentName,
       parentDescription: parentDescription,

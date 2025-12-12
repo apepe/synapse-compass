@@ -4,6 +4,22 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import FolderTree from '@/components/FolderTree'
 import TypingDescription from '@/components/TypingDescription'
+import CreatorInfoWidget from '@/components/CreatorInfoWidget'
+import AccessInfoWidget from '@/components/AccessInfoWidget'
+
+interface CreatorInfo {
+  id: string
+  userName: string
+  displayName: string | null
+  profilePicUrl: string | null
+}
+
+interface AccessInfo {
+  canView: boolean
+  canEdit: boolean
+  canDownload: boolean
+  accessControlList: any[]
+}
 
 interface EntityData {
   name: string
@@ -12,6 +28,10 @@ interface EntityData {
   description: string | null
   createdOn: string | null
   modifiedOn: string | null
+  createdBy: string | null
+  creatorInfo: CreatorInfo | null
+  annotations: Record<string, any> | null
+  accessInfo: AccessInfo | null
   parentId: string | null
   parentName: string | null
   parentDescription: string | null
@@ -244,6 +264,19 @@ function HomeContent() {
               parentName={entityData.parentName}
               siblings={entityData.siblings}
             />
+
+            {/* Info Widgets */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <CreatorInfoWidget
+                creatorInfo={entityData.creatorInfo}
+                createdOn={entityData.createdOn}
+                annotations={entityData.annotations}
+              />
+              <AccessInfoWidget
+                accessInfo={entityData.accessInfo}
+                entityId={entityData.id}
+              />
+            </div>
           </div>
         )}
       </div>

@@ -37,9 +37,6 @@ export default function TypingDescription({ text, onComplete }: TypingDescriptio
   return (
     <p className="text-gray-700 leading-relaxed">
       {displayedText}
-      {isTyping && (
-        <span className="inline-block w-0.5 h-4 bg-gray-700 ml-1 animate-pulse">|</span>
-      )}
     </p>
   )
 }
