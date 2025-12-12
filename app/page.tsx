@@ -91,86 +91,66 @@ function HomeContent() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-10">
-          <h1 className="text-5xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3">
-            Synapse Compass
-          </h1>
-          <p className="text-lg text-slate-600 font-medium">
+    <main className="min-h-screen bg-[#0f0f23] text-gray-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-semibold text-gray-100 mb-2">Synapse Compass</h1>
+          <p className="text-sm text-gray-400">
             Navigate Synapse.org entities in their network context
           </p>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 mb-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="synId" className="block text-sm font-semibold text-slate-700 mb-3">
-                Enter Synapse ID
-              </label>
-              <div className="flex gap-3">
-                <input
-                  id="synId"
-                  type="text"
-                  value={synId}
-                  onChange={(e) => setSynId(e.target.value)}
-                  placeholder="syn7208917 or https://synapse.org/..."
-                  className="flex-1 px-5 py-3 border-2 border-slate-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-slate-900 placeholder-slate-400"
-                />
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
-                >
-                  {loading ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Loading...
-                    </span>
-                  ) : (
-                    'Lookup'
-                  )}
-                </button>
-              </div>
-              <p className="mt-3 text-sm text-slate-500">
-                You can enter just the ID (e.g., syn7208917) or a full Synapse URL
-              </p>
+        <div className="mb-6">
+          <form onSubmit={handleSubmit}>
+            <div className="flex gap-2">
+              <input
+                id="synId"
+                type="text"
+                value={synId}
+                onChange={(e) => setSynId(e.target.value)}
+                placeholder="Enter Synapse ID (e.g., syn7208917)"
+                className="flex-1 px-4 py-3 bg-[#1a1a2e] border border-gray-700 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:border-gray-600 transition-colors"
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white font-medium rounded-lg focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {loading ? 'Loading...' : 'Lookup'}
+              </button>
             </div>
           </form>
 
           {error && (
-            <div className="mt-4 p-4 bg-red-50/80 border-2 border-red-200 rounded-xl">
-              <p className="text-sm text-red-800 font-medium">{error}</p>
+            <div className="mt-4 p-3 bg-red-900/20 border border-red-800/50 rounded-lg">
+              <p className="text-sm text-red-400">{error}</p>
             </div>
           )}
         </div>
 
         {loading && (
           <div className="text-center py-16">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mb-4"></div>
-            <p className="text-slate-600 font-medium">Fetching entity information...</p>
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gray-600 border-t-gray-400 mb-4"></div>
+            <p className="text-gray-400 text-sm">Fetching entity information...</p>
           </div>
         )}
 
         {entityData && !loading && (
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6">
-            <div className="mb-6 pb-4 border-b border-slate-200">
-              <h2 className="text-3xl font-bold text-slate-900 mb-2">{entityData.name}</h2>
-              <div className="flex items-center gap-4 text-sm">
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full font-medium">
+          <div>
+            <div className="mb-4 pb-4 border-b border-gray-800">
+              <h2 className="text-xl font-semibold text-gray-100 mb-2">{entityData.name}</h2>
+              <div className="flex items-center gap-4 text-xs text-gray-400">
+                <span className="px-2 py-1 bg-gray-800 rounded text-gray-300">
                   {entityData.type.split('.').pop()}
                 </span>
                 <a
                   href={entityData.synapseUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 hover:underline font-medium flex items-center gap-1 transition-colors"
+                  className="text-gray-400 hover:text-gray-300 hover:underline flex items-center gap-1 transition-colors"
                 >
                   View on Synapse
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
                 </a>
@@ -193,12 +173,10 @@ function HomeContent() {
 export default function Home() {
   return (
     <Suspense fallback={
-      <main className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-2xl mx-auto">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Synapse Compass</h1>
-            <p className="text-lg text-gray-600">Loading...</p>
-          </div>
+      <main className="min-h-screen bg-[#0f0f23] text-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-3xl font-semibold text-gray-100 mb-2">Synapse Compass</h1>
+          <p className="text-sm text-gray-400">Loading...</p>
         </div>
       </main>
     }>
