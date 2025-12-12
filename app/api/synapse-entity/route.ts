@@ -39,39 +39,128 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Fetch entity information from Synapse.org REST API
-    // The Synapse REST API endpoint for entity metadata
-    const synapseApiUrl = `https://repo-prod.prod.sagebase.org/repo/v1/entity/${synId}`
+    const baseUrl = 'https://repo-prod.prod.sagebase.org/repo/v1'
     
-    const response = await fetch(synapseApiUrl, {
+    // Fetch entity information from Synapse.org REST API
+    const entityResponse = await fetch(`${baseUrl}/entity/${synId}`, {
       headers: {
         'Accept': 'application/json',
       },
     })
 
-    if (!response.ok) {
-      if (response.status === 404) {
+    if (!entityResponse.ok) {
+      if (entityResponse.status === 404) {
         return NextResponse.json(
           { error: 'Entity not found. The SynID may be invalid or you may not have access.' },
           { status: 404 }
         )
       }
       
-      const errorText = await response.text()
+      const errorText = await entityResponse.text()
       return NextResponse.json(
-        { error: `Synapse API error: ${response.status} - ${errorText}` },
-        { status: response.status }
+        { error: `Synapse API error: ${entityResponse.status} - ${errorText}` },
+        { status: entityResponse.status }
       )
     }
 
-    const entityData = await response.json()
+    const entityData = await entityResponse.json()
     
-    // Return the entity name (and potentially other metadata later)
+    // Build breadcrumb trail by fetching parent entities
+    const breadcrumbs: Array<{ id: string; name: string; type: string }> = []
+    let currentEntity = entityData
+    
+    // Add current entity to breadcrumbs
+    breadcrumbs.unshift({
+      id: currentEntity.id,
+      name: currentEntity.name || 'Unknown',
+      type: currentEntity.concreteType || 'Unknown'
+    })
+    
+    // Fetch parent entities to build hierarchy
+    let parentId = currentEntity.parentId
+    let depth = 0
+    const maxDepth = 10 // Prevent infinite loops
+    
+    while (parentId && depth < maxDepth) {
+      try {
+        const parentResponse = await fetch(`${baseUrl}/entity/${parentId}`, {
+          headers: {
+            'Accept': 'application/json',
+          },
+        })
+        
+        if (parentResponse.ok) {
+          const parentData = await parentResponse.json()
+          breadcrumbs.unshift({
+            id: parentData.id,
+            name: parentData.name || 'Unknown',
+            type: parentData.concreteType || 'Unknown'
+          })
+          parentId = parentData.parentId
+          depth++
+        } else {
+          break
+        }
+      } catch (err) {
+        console.error(`Error fetching parent ${parentId}:`, err)
+        break
+      }
+    }
+    
+    // Try to fetch wiki content for the project (first breadcrumb if it's a project)
+    let wikiContent: string | null = null
+    const projectEntity = breadcrumbs.find(b => b.type.includes('Project'))
+    
+    if (projectEntity) {
+      try {
+        // Get the root wiki page for the project
+        const wikiListResponse = await fetch(`${baseUrl}/entity/${projectEntity.id}/wiki2`, {
+          headers: {
+            'Accept': 'application/json',
+          },
+        })
+        
+        if (wikiListResponse.ok) {
+          const wikiListData = await wikiListResponse.json()
+          // wiki2 returns a single wiki object (the root wiki)
+          if (wikiListData && wikiListData.id) {
+            // Fetch the wiki content by ID - this returns the markdown directly
+            const wikiResponse = await fetch(
+              `${baseUrl}/entity/${projectEntity.id}/wiki/${wikiListData.id}`,
+              {
+                headers: {
+                  'Accept': 'application/json',
+                },
+              }
+            )
+            
+            if (wikiResponse.ok) {
+              const wikiData = await wikiResponse.json()
+              // The markdown content is in the 'markdown' field
+              if (wikiData.markdown) {
+                wikiContent = wikiData.markdown
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching wiki content:', err)
+        // Don't fail the whole request if wiki fetch fails
+      }
+    }
+    
+    // Return comprehensive entity information
     return NextResponse.json({
       name: entityData.name || 'Unknown',
       id: entityData.id,
       type: entityData.concreteType,
-      // We can add more fields here as needed
+      description: entityData.description || null,
+      createdOn: entityData.createdOn || null,
+      modifiedOn: entityData.modifiedOn || null,
+      breadcrumbs: breadcrumbs,
+      project: projectEntity || null,
+      wikiContent: wikiContent,
+      synapseUrl: `https://www.synapse.org/#!Synapse:${synId}`,
     })
   } catch (error) {
     console.error('Error fetching Synapse entity:', error)

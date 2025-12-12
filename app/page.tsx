@@ -3,9 +3,28 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 
+interface Breadcrumb {
+  id: string
+  name: string
+  type: string
+}
+
+interface EntityData {
+  name: string
+  id: string
+  type: string
+  description?: string | null
+  createdOn?: string | null
+  modifiedOn?: string | null
+  breadcrumbs: Breadcrumb[]
+  project: Breadcrumb | null
+  wikiContent: string | null
+  synapseUrl: string
+}
+
 function HomeContent() {
   const [synId, setSynId] = useState('')
-  const [entityName, setEntityName] = useState<string | null>(null)
+  const [entityData, setEntityData] = useState<EntityData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const searchParams = useSearchParams()
@@ -47,7 +66,7 @@ function HomeContent() {
 
     setLoading(true)
     setError(null)
-    setEntityName(null)
+    setEntityData(null)
 
     try {
       const response = await fetch(`/api/synapse-entity?id=${encodeURIComponent(id)}`)
@@ -58,10 +77,10 @@ function HomeContent() {
       }
 
       const data = await response.json()
-      setEntityName(data.name || null)
+      setEntityData(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
-      setEntityName(null)
+      setEntityData(null)
     } finally {
       setLoading(false)
     }
@@ -130,10 +149,89 @@ function HomeContent() {
             </div>
           )}
 
-          {entityName && !loading && (
-            <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-md">
-              <h2 className="text-sm font-medium text-green-800 mb-1">Entity Name:</h2>
-              <p className="text-lg font-semibold text-green-900">{entityName}</p>
+          {entityData && !loading && (
+            <div className="mt-6 space-y-4">
+              {/* Breadcrumb Trail */}
+              {entityData.breadcrumbs.length > 1 && (
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+                  <h3 className="text-xs font-semibold text-blue-800 mb-2 uppercase tracking-wide">
+                    Location
+                  </h3>
+                  <nav className="flex items-center space-x-2 text-sm">
+                    {entityData.breadcrumbs.map((crumb, index) => (
+                      <div key={crumb.id} className="flex items-center">
+                        <a
+                          href={`https://www.synapse.org/#!Synapse:${crumb.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-700 hover:text-blue-900 hover:underline font-medium"
+                        >
+                          {crumb.name}
+                        </a>
+                        {index < entityData.breadcrumbs.length - 1 && (
+                          <span className="mx-2 text-blue-500">→</span>
+                        )}
+                      </div>
+                    ))}
+                  </nav>
+                </div>
+              )}
+
+              {/* Project Information */}
+              {entityData.project && (
+                <div className="p-4 bg-purple-50 border border-purple-200 rounded-md">
+                  <h3 className="text-xs font-semibold text-purple-800 mb-2 uppercase tracking-wide">
+                    Project
+                  </h3>
+                  <p className="text-lg font-semibold text-purple-900">
+                    {entityData.project.name}
+                  </p>
+                  <a
+                    href={`https://www.synapse.org/#!Synapse:${entityData.project.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-purple-700 hover:text-purple-900 hover:underline mt-1 inline-block"
+                  >
+                    View on Synapse →
+                  </a>
+                </div>
+              )}
+
+              {/* Entity Information */}
+              <div className="p-4 bg-green-50 border border-green-200 rounded-md">
+                <h3 className="text-xs font-semibold text-green-800 mb-2 uppercase tracking-wide">
+                  Entity
+                </h3>
+                <p className="text-lg font-semibold text-green-900 mb-2">{entityData.name}</p>
+                <p className="text-sm text-green-700 mb-3">
+                  <span className="font-medium">Type:</span> {entityData.type.split('.').pop()}
+                </p>
+                {entityData.description && (
+                  <p className="text-sm text-green-700 mb-3">{entityData.description}</p>
+                )}
+                <a
+                  href={entityData.synapseUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-green-700 hover:text-green-900 hover:underline"
+                >
+                  View on Synapse →
+                </a>
+              </div>
+
+              {/* Wiki Content */}
+              {entityData.wikiContent && (
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-md">
+                  <h3 className="text-xs font-semibold text-gray-800 mb-3 uppercase tracking-wide">
+                    Project Description
+                  </h3>
+                  <div className="prose prose-sm max-w-none">
+                    <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans">
+                      {entityData.wikiContent}
+                    </pre>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
