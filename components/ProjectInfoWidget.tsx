@@ -10,28 +10,6 @@ interface ProjectInfoWidgetProps {
 }
 
 export default function ProjectInfoWidget({ projectId, projectName, projectWiki, projectAnnotations, projectCitations, googleScholarMentions }: ProjectInfoWidgetProps) {
-  // Extract a summary from the wiki (first paragraph or first few sentences)
-  const getProjectSummary = (wiki: string | null) => {
-    if (!wiki) return null
-    
-    // Remove markdown headers, links, and other syntax for a cleaner summary
-    let cleaned = wiki
-      .replace(/#+\s/g, '') // Remove headers
-      .replace(/\[(.*?)\]\((.*?)\)/g, '$1') // Remove links, keep text
-      .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
-      .replace(/\*(.*?)\*/g, '$1') // Remove italics
-      .trim()
-    
-    // Get first paragraph or first 200 characters
-    const firstParagraph = cleaned.split('\n\n')[0] || cleaned.split('\n')[0]
-    if (firstParagraph.length > 200) {
-      return firstParagraph.substring(0, 200) + '...'
-    }
-    return firstParagraph
-  }
-
-  const projectSummary = getProjectSummary(projectWiki)
-
   // Extract DOI from project annotations
   const projectDoi = projectAnnotations?.stringAnnotations?.find((ann: any) => 
     ann.key && (ann.key.toLowerCase() === 'doi' || ann.key.toLowerCase() === 'doi')
