@@ -56,7 +56,7 @@ export default function ProjectInfoWidget({ projectId, projectName, projectWiki,
             href={`https://www.synapse.org/#!Synapse:${projectId}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-700 hover:underline font-medium text-sm"
+            className="text-blue-600 hover:text-blue-700 hover:underline font-medium text-base"
           >
             {projectName}
           </a>
@@ -82,14 +82,6 @@ export default function ProjectInfoWidget({ projectId, projectName, projectWiki,
                 {projectDoi}
               </a>
             </div>
-          </div>
-        )}
-
-        {/* Project Summary/Description */}
-        {projectSummary && (
-          <div>
-            <div className="text-sm font-medium text-gray-700 mb-1">Description</div>
-            <div className="text-sm text-gray-600 leading-relaxed">{projectSummary}</div>
           </div>
         )}
 
@@ -131,21 +123,6 @@ export default function ProjectInfoWidget({ projectId, projectName, projectWiki,
             </div>
           </div>
         )}
-
-        {/* Link to full project */}
-        <div>
-          <a
-            href={`https://www.synapse.org/#!Synapse:${projectId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 hover:underline"
-          >
-            View full project on Synapse
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-          </a>
-        </div>
       </div>
     </div>
   )
