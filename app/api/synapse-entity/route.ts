@@ -84,6 +84,7 @@ export async function GET(request: NextRequest) {
             profilePicUrl: userData.profilePicureFileHandleId 
               ? `https://www.synapse.org/portal/filehandleassociation?fileHandleId=${userData.profilePicureFileHandleId}&associationObjectType=UserProfile&associationObjectId=${userData.ownerId || userId}`
               : null,
+            affiliation: userData.company || userData.organization || null,
           }
         }
       } catch (err) {
@@ -93,13 +94,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch creator information
-    let creatorInfo: { id: string; userName: string; displayName: string | null; profilePicUrl: string | null } | null = null
+    let creatorInfo: { id: string; userName: string; displayName: string | null; profilePicUrl: string | null; affiliation: string | null } | null = null
     if (entityData.createdBy) {
       creatorInfo = await fetchUserProfile(entityData.createdBy)
     }
 
-    // Fetch modifier information
-    let modifierInfo: { id: string; userName: string; displayName: string | null; profilePicUrl: string | null } | null = null
+    // Fetch modifier information (only if different from creator)
+    let modifierInfo: { id: string; userName: string; displayName: string | null; profilePicUrl: string | null; affiliation: string | null } | null = null
     if (entityData.modifiedBy && entityData.modifiedBy !== entityData.createdBy) {
       modifierInfo = await fetchUserProfile(entityData.modifiedBy)
     }
