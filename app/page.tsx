@@ -6,6 +6,7 @@ import FolderTree from '@/components/FolderTree'
 import TypingDescription from '@/components/TypingDescription'
 import CreatorInfoWidget from '@/components/CreatorInfoWidget'
 import AccessInfoWidget from '@/components/AccessInfoWidget'
+import ProjectInfoWidget from '@/components/ProjectInfoWidget'
 import Logo from '@/components/Logo'
 import ShareButton from '@/components/ShareButton'
 
@@ -267,6 +268,7 @@ function HomeContent() {
               <CreatorInfoWidget
                 creatorInfo={entityData.creatorInfo}
                 createdOn={entityData.createdOn}
+                modifiedOn={entityData.modifiedOn}
                 annotations={entityData.annotations}
               />
               <AccessInfoWidget
@@ -275,6 +277,15 @@ function HomeContent() {
                 entityId={entityData.id}
               />
             </div>
+
+            {/* Project Information */}
+            {entityData.projectId && (
+              <ProjectInfoWidget
+                projectId={entityData.projectId}
+                projectName={entityData.projectName}
+                projectWiki={entityData.projectWiki}
+              />
+            )}
 
             {/* Folder Tree Visualization */}
             <FolderTree

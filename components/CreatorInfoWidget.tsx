@@ -10,10 +10,11 @@ interface CreatorInfo {
 interface CreatorInfoWidgetProps {
   creatorInfo: CreatorInfo | null
   createdOn: string | null
+  modifiedOn: string | null
   annotations: Record<string, any> | null
 }
 
-export default function CreatorInfoWidget({ creatorInfo, createdOn, annotations }: CreatorInfoWidgetProps) {
+export default function CreatorInfoWidget({ creatorInfo, createdOn, modifiedOn, annotations }: CreatorInfoWidgetProps) {
   // Extract DOI from annotations
   const doi = annotations?.stringAnnotations?.find((ann: any) => 
     ann.key === 'doi' || ann.key === 'DOI'
@@ -25,13 +26,17 @@ export default function CreatorInfoWidget({ creatorInfo, createdOn, annotations 
   )?.value?.[0]
 
   // Format date
-  const formattedDate = createdOn 
-    ? new Date(createdOn).toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      })
-    : null
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return null
+    return new Date(dateString).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    })
+  }
+
+  const formattedCreatedDate = formatDate(createdOn)
+  const formattedModifiedDate = formatDate(modifiedOn)
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -95,10 +100,18 @@ export default function CreatorInfoWidget({ creatorInfo, createdOn, annotations 
         )}
 
         {/* Creation Date */}
-        {formattedDate && (
+        {formattedCreatedDate && (
           <div>
             <div className="text-sm font-medium text-gray-700 mb-1">Created</div>
-            <div className="text-sm text-gray-600">{formattedDate}</div>
+            <div className="text-sm text-gray-600">{formattedCreatedDate}</div>
+          </div>
+        )}
+
+        {/* Modified Date */}
+        {formattedModifiedDate && (
+          <div>
+            <div className="text-sm font-medium text-gray-700 mb-1">Modified</div>
+            <div className="text-sm text-gray-600">{formattedModifiedDate}</div>
           </div>
         )}
 
@@ -129,7 +142,7 @@ export default function CreatorInfoWidget({ creatorInfo, createdOn, annotations 
           </div>
         )}
 
-        {!creatorInfo && !formattedDate && !doi && !citation && (
+        {!creatorInfo && !formattedCreatedDate && !formattedModifiedDate && !doi && !citation && (
           <div className="text-sm text-gray-500">No additional information available</div>
         )}
       </div>
