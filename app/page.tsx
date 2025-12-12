@@ -2,23 +2,15 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-
-interface Breadcrumb {
-  id: string
-  name: string
-  type: string
-}
+import EntityGraph from '@/components/EntityGraph'
 
 interface EntityData {
   name: string
   id: string
   type: string
-  description?: string | null
-  createdOn?: string | null
-  modifiedOn?: string | null
-  breadcrumbs: Breadcrumb[]
-  project: Breadcrumb | null
-  wikiContent: string | null
+  parentId: string | null
+  parentName: string | null
+  siblings: Array<{ id: string; name: string; type: string }>
   synapseUrl: string
 }
 
@@ -100,15 +92,15 @@ function HomeContent() {
 
   return (
     <main className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Synapse Compass</h1>
           <p className="text-lg text-gray-600">
-            Explore Synapse.org entities quickly and easily
+            Explore Synapse.org entities in their network context
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="synId" className="block text-sm font-medium text-gray-700 mb-2">
@@ -142,99 +134,39 @@ function HomeContent() {
               <p className="text-sm text-red-800">{error}</p>
             </div>
           )}
+        </div>
 
-          {loading && (
-            <div className="mt-4 text-center">
-              <p className="text-gray-600">Fetching entity information...</p>
-            </div>
-          )}
+        {loading && (
+          <div className="text-center py-12">
+            <p className="text-gray-600">Fetching entity information...</p>
+          </div>
+        )}
 
-          {entityData && !loading && (
-            <div className="mt-6 space-y-4">
-              {/* Breadcrumb Trail */}
-              {entityData.breadcrumbs.length > 1 && (
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
-                  <h3 className="text-xs font-semibold text-blue-800 mb-2 uppercase tracking-wide">
-                    Location
-                  </h3>
-                  <nav className="flex items-center space-x-2 text-sm">
-                    {entityData.breadcrumbs.map((crumb, index) => (
-                      <div key={crumb.id} className="flex items-center">
-                        <a
-                          href={`https://www.synapse.org/#!Synapse:${crumb.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-700 hover:text-blue-900 hover:underline font-medium"
-                        >
-                          {crumb.name}
-                        </a>
-                        {index < entityData.breadcrumbs.length - 1 && (
-                          <span className="mx-2 text-blue-500">→</span>
-                        )}
-                      </div>
-                    ))}
-                  </nav>
-                </div>
-              )}
-
-              {/* Project Information */}
-              {entityData.project && (
-                <div className="p-4 bg-purple-50 border border-purple-200 rounded-md">
-                  <h3 className="text-xs font-semibold text-purple-800 mb-2 uppercase tracking-wide">
-                    Project
-                  </h3>
-                  <p className="text-lg font-semibold text-purple-900">
-                    {entityData.project.name}
-                  </p>
-                  <a
-                    href={`https://www.synapse.org/#!Synapse:${entityData.project.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-purple-700 hover:text-purple-900 hover:underline mt-1 inline-block"
-                  >
-                    View on Synapse →
-                  </a>
-                </div>
-              )}
-
-              {/* Entity Information */}
-              <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-                <h3 className="text-xs font-semibold text-green-800 mb-2 uppercase tracking-wide">
-                  Entity
-                </h3>
-                <p className="text-lg font-semibold text-green-900 mb-2">{entityData.name}</p>
-                <p className="text-sm text-green-700 mb-3">
-                  <span className="font-medium">Type:</span> {entityData.type.split('.').pop()}
-                </p>
-                {entityData.description && (
-                  <p className="text-sm text-green-700 mb-3">{entityData.description}</p>
-                )}
+        {entityData && !loading && (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="mb-4">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">{entityData.name}</h2>
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">Type:</span> {entityData.type.split('.').pop()} •{' '}
                 <a
                   href={entityData.synapseUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-green-700 hover:text-green-900 hover:underline"
+                  className="text-blue-600 hover:text-blue-800 hover:underline"
                 >
                   View on Synapse →
                 </a>
-              </div>
-
-              {/* Wiki Content */}
-              {entityData.wikiContent && (
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-md">
-                  <h3 className="text-xs font-semibold text-gray-800 mb-3 uppercase tracking-wide">
-                    Project Description
-                  </h3>
-                  <div className="prose prose-sm max-w-none">
-                    <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans">
-                      {entityData.wikiContent}
-                    </pre>
-                  </div>
-                </div>
-              )}
+              </p>
             </div>
-          )}
-        </div>
+            <EntityGraph
+              currentEntityId={entityData.id}
+              currentEntityName={entityData.name}
+              parentId={entityData.parentId}
+              parentName={entityData.parentName}
+              siblings={entityData.siblings}
+            />
+          </div>
+        )}
       </div>
     </main>
   )

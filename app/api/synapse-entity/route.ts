@@ -65,24 +65,14 @@ export async function GET(request: NextRequest) {
 
     const entityData = await entityResponse.json()
     
-    // Build breadcrumb trail by fetching parent entities
-    const breadcrumbs: Array<{ id: string; name: string; type: string }> = []
-    let currentEntity = entityData
+    // Fetch sibling entities (children of the parent folder)
+    let siblings: Array<{ id: string; name: string; type: string }> = []
+    let parentName: string | null = null
+    const parentId = entityData.parentId
     
-    // Add current entity to breadcrumbs
-    breadcrumbs.unshift({
-      id: currentEntity.id,
-      name: currentEntity.name || 'Unknown',
-      type: currentEntity.concreteType || 'Unknown'
-    })
-    
-    // Fetch parent entities to build hierarchy
-    let parentId = currentEntity.parentId
-    let depth = 0
-    const maxDepth = 10 // Prevent infinite loops
-    
-    while (parentId && depth < maxDepth) {
+    if (parentId) {
       try {
+        // Fetch parent entity to get its name
         const parentResponse = await fetch(`${baseUrl}/entity/${parentId}`, {
           headers: {
             'Accept': 'application/json',
@@ -91,75 +81,46 @@ export async function GET(request: NextRequest) {
         
         if (parentResponse.ok) {
           const parentData = await parentResponse.json()
-          breadcrumbs.unshift({
-            id: parentData.id,
-            name: parentData.name || 'Unknown',
-            type: parentData.concreteType || 'Unknown'
-          })
-          parentId = parentData.parentId
-          depth++
-        } else {
-          break
+          parentName = parentData.name || 'Parent Folder'
         }
-      } catch (err) {
-        console.error(`Error fetching parent ${parentId}:`, err)
-        break
-      }
-    }
-    
-    // Try to fetch wiki content for the project (first breadcrumb if it's a project)
-    let wikiContent: string | null = null
-    const projectEntity = breadcrumbs.find(b => b.type.includes('Project'))
-    
-    if (projectEntity) {
-      try {
-        // Get the root wiki page for the project
-        const wikiListResponse = await fetch(`${baseUrl}/entity/${projectEntity.id}/wiki2`, {
+        
+        // Fetch children of the parent folder using POST endpoint
+        const childrenResponse = await fetch(`${baseUrl}/entity/children`, {
+          method: 'POST',
           headers: {
             'Accept': 'application/json',
+            'Content-Type': 'application/json',
           },
+          body: JSON.stringify({
+            parentId: parentId,
+            includeTypes: ['file', 'folder', 'project', 'table', 'link']
+          }),
         })
         
-        if (wikiListResponse.ok) {
-          const wikiListData = await wikiListResponse.json()
-          // wiki2 returns a single wiki object (the root wiki)
-          if (wikiListData && wikiListData.id) {
-            // Fetch the wiki content by ID - this returns the markdown directly
-            const wikiResponse = await fetch(
-              `${baseUrl}/entity/${projectEntity.id}/wiki/${wikiListData.id}`,
-              {
-                headers: {
-                  'Accept': 'application/json',
-                },
-              }
-            )
-            
-            if (wikiResponse.ok) {
-              const wikiData = await wikiResponse.json()
-              // The markdown content is in the 'markdown' field
-              if (wikiData.markdown) {
-                wikiContent = wikiData.markdown
-              }
-            }
+        if (childrenResponse.ok) {
+          const childrenData = await childrenResponse.json()
+          if (childrenData.page && Array.isArray(childrenData.page)) {
+            siblings = childrenData.page.map((child: any) => ({
+              id: child.id,
+              name: child.name || 'Unknown',
+              type: child.type || 'Unknown'
+            }))
           }
         }
       } catch (err) {
-        console.error('Error fetching wiki content:', err)
-        // Don't fail the whole request if wiki fetch fails
+        console.error('Error fetching parent or sibling entities:', err)
+        // Don't fail the whole request if fetch fails
       }
     }
     
-    // Return comprehensive entity information
+    // Return entity information with graph data
     return NextResponse.json({
       name: entityData.name || 'Unknown',
       id: entityData.id,
       type: entityData.concreteType,
-      description: entityData.description || null,
-      createdOn: entityData.createdOn || null,
-      modifiedOn: entityData.modifiedOn || null,
-      breadcrumbs: breadcrumbs,
-      project: projectEntity || null,
-      wikiContent: wikiContent,
+      parentId: parentId || null,
+      parentName: parentName,
+      siblings: siblings,
       synapseUrl: `https://www.synapse.org/#!Synapse:${synId}`,
     })
   } catch (error) {
