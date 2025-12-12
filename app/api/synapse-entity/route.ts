@@ -499,13 +499,42 @@ export async function GET(request: NextRequest) {
         return citations
       }
 
+      // Also fetch citations/mentions from the entity itself (not just children)
+      // Check the entity's own annotations for citations and mentions
+      try {
+        const entityAnnotationsResponse = await fetch(`${baseUrl}/entity/${synId}/annotations`, {
+          headers: {
+            'Accept': 'application/json',
+          },
+        })
+        if (entityAnnotationsResponse.ok) {
+          const entityAnnotations = await entityAnnotationsResponse.json()
+          if (entityAnnotations.stringAnnotations && typeof entityAnnotations.stringAnnotations === 'object' && !Array.isArray(entityAnnotations.stringAnnotations)) {
+            const stringAnnKeys = Object.keys(entityAnnotations.stringAnnotations)
+            for (const key of stringAnnKeys) {
+              const keyLower = key.toLowerCase()
+              if (keyLower === 'citation' || keyLower === 'mention') {
+                const values = entityAnnotations.stringAnnotations[key]
+                if (Array.isArray(values) && values.length > 0) {
+                  projectCitations.push(...values)
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching entity citations/mentions:', err)
+      }
+
       // Fetch all citations from project children (only if this is a project or we have a project)
       if (projectId && projectId !== synId) {
         // Only fetch if we're not already looking at the project itself
-        projectCitations = await fetchAllChildrenCitations(projectId)
+        const childrenCitations = await fetchAllChildrenCitations(projectId)
+        projectCitations.push(...childrenCitations)
       } else if (isProject) {
         // If we're looking at the project itself, fetch its children
-        projectCitations = await fetchAllChildrenCitations(synId)
+        const childrenCitations = await fetchAllChildrenCitations(synId)
+        projectCitations.push(...childrenCitations)
       }
       
       // Fetch children of the direct parent folder
