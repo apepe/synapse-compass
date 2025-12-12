@@ -1,9 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import OpenAI from 'openai'
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
 
 // Helper to clean markdown for prompt
 function cleanMarkdown(markdown: string): string {
@@ -44,23 +39,48 @@ ${cleanedWiki.substring(0, 3000)}
 
 Generate a concise summary:`
 
-    const chatCompletion = await openai.chat.completions.create({
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a helpful assistant that provides clear, concise summaries of scientific research projects on Synapse.org. Your summaries should be informative, accurate, and written in a natural, conversational style.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      model: 'gpt-4o-mini',
-      temperature: 0.7,
-      max_tokens: 200,
+    const apiKey = process.env.OPENAI_API_KEY
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'OpenAI API key not configured' },
+        { status: 500 }
+      )
+    }
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful assistant that provides clear, concise summaries of scientific research projects on Synapse.org. Your summaries should be informative, accurate, and written in a natural, conversational style.',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 200,
+      }),
     })
 
-    const summary = chatCompletion.choices[0].message.content
+    if (!response.ok) {
+      const errorData = await response.text()
+      console.error('OpenAI API error:', errorData)
+      return NextResponse.json(
+        { error: 'Failed to generate summary' },
+        { status: response.status }
+      )
+    }
+
+    const data = await response.json()
+    const summary = data.choices[0]?.message?.content || 'Unable to generate summary.'
 
     return NextResponse.json({ summary })
   } catch (error) {
