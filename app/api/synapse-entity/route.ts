@@ -82,8 +82,9 @@ export async function GET(request: NextRequest) {
             displayName: creatorData.firstName && creatorData.lastName 
               ? `${creatorData.firstName} ${creatorData.lastName}` 
               : creatorData.displayName || null,
+            // Try to construct profile image URL - Synapse uses file handle associations
             profilePicUrl: creatorData.profilePicureFileHandleId 
-              ? `https://www.synapse.org/portal/ProfileImage/${creatorData.profilePicureFileHandleId}`
+              ? `https://www.synapse.org/portal/filehandleassociation?fileHandleId=${creatorData.profilePicureFileHandleId}&associationObjectType=UserProfile&associationObjectId=${creatorData.ownerId || entityData.createdBy}`
               : null,
           }
         }
@@ -128,6 +129,26 @@ export async function GET(request: NextRequest) {
     } catch (err) {
       // ACL might not be accessible, that's okay
       console.error('Error fetching ACL:', err)
+    }
+    
+    // Fetch access requirements (ACT - Access Control Team requirements)
+    let accessRequirements: any[] | null = null
+    try {
+      // Try to get access requirements for this entity
+      const accessReqResponse = await fetch(`${baseUrl}/entity/${synId}/accessRequirement`, {
+        headers: {
+          'Accept': 'application/json',
+        },
+      })
+      if (accessReqResponse.ok) {
+        const accessReqData = await accessReqResponse.json()
+        if (accessReqData.results && Array.isArray(accessReqData.results) && accessReqData.results.length > 0) {
+          accessRequirements = accessReqData.results
+        }
+      }
+    } catch (err) {
+      // Access requirements might not be accessible, that's okay
+      console.error('Error fetching access requirements:', err)
     }
     
     // Check if this entity is itself a Project

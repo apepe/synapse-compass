@@ -32,6 +32,7 @@ interface EntityData {
   creatorInfo: CreatorInfo | null
   annotations: Record<string, any> | null
   accessInfo: AccessInfo | null
+  accessRequirements: any[] | null
   parentId: string | null
   parentName: string | null
   parentDescription: string | null
@@ -257,15 +258,6 @@ function HomeContent() {
               </div>
             </div>
 
-            {/* Folder Tree Visualization */}
-            <FolderTree
-              currentEntityId={entityData.id}
-              currentEntityName={entityData.name}
-              parentId={entityData.parentId}
-              parentName={entityData.parentName}
-              siblings={entityData.siblings}
-            />
-
             {/* Info Widgets */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <CreatorInfoWidget
@@ -275,9 +267,19 @@ function HomeContent() {
               />
               <AccessInfoWidget
                 accessInfo={entityData.accessInfo}
+                accessRequirements={entityData.accessRequirements}
                 entityId={entityData.id}
               />
             </div>
+
+            {/* Folder Tree Visualization */}
+            <FolderTree
+              currentEntityId={entityData.id}
+              currentEntityName={entityData.name}
+              parentId={entityData.parentId}
+              parentName={entityData.parentName}
+              siblings={entityData.siblings}
+            />
           </div>
         )}
       </div>
