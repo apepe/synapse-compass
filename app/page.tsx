@@ -7,6 +7,7 @@ import TypingDescription from '@/components/TypingDescription'
 import CreatorInfoWidget from '@/components/CreatorInfoWidget'
 import AccessInfoWidget from '@/components/AccessInfoWidget'
 import Logo from '@/components/Logo'
+import ShareButton from '@/components/ShareButton'
 
 interface CreatorInfo {
   id: string
@@ -169,7 +170,10 @@ function HomeContent() {
       <div className="max-w-6xl mx-auto px-6 py-6">
         {/* Header with Logo and Search */}
         <div className="flex items-center justify-between mb-8 border-b border-gray-200 pb-6">
-          <Logo />
+          <div className="flex items-center gap-4">
+            <Logo />
+            <ShareButton entityId={entityData?.id || null} entityName={entityData?.name || null} />
+          </div>
           
           {/* Search Form - Smaller, Top Right */}
           <div className="flex-shrink-0">
