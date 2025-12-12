@@ -44,7 +44,11 @@ Answers are generated only from the current entity's visible metadata and docume
 
 ## Getting Started
 
-This project is just getting started. More information will be added as development progresses.
+This project is in early development. More information will be added as development progresses.
+
+## Status
+
+🚧 **Early Development** - Project setup complete, core features in planning phase.
 
 ## Development
 
