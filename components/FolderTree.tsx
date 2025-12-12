@@ -90,21 +90,14 @@ export default function FolderTree({
   // Filter out the parent from siblings (don't show it twice)
   const filteredSiblings = siblings.filter(s => s.id !== parentId)
   
-  const allItems: EntityWithFlags[] = [
-    ...(parentId && parentName ? [{
-      id: parentId,
-      name: parentName,
-      type: 'org.sagebionetworks.repo.model.Folder',
-      isParent: true,
-    } as EntityWithFlags] : []),
-    ...filteredSiblings.map(s => ({
-      ...s,
-      isCurrent: s.id === currentEntityId,
-    } as EntityWithFlags)),
-  ]
+  const allItems: EntityWithFlags[] = filteredSiblings.map(s => ({
+    ...s,
+    isCurrent: s.id === currentEntityId,
+  } as EntityWithFlags))
 
   // Group items by type for better organization
-  const folders = allItems.filter(item => item.type.includes('Folder') || item.type.includes('Project'))
+  // Exclude parent from folders list (parent is shown separately above)
+  const folders = allItems.filter(item => (item.type.includes('Folder') || item.type.includes('Project')) && !item.isParent)
   const files = allItems.filter(item => !item.type.includes('Folder') && !item.type.includes('Project'))
 
   return (
