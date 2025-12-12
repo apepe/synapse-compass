@@ -70,7 +70,50 @@ export async function GET(request: NextRequest) {
     let parentName: string | null = null
     let parentDescription: string | null = null
     let projectWiki: string | null = null
+    let projectId: string | null = null
+    let projectName: string | null = null
     const parentId = entityData.parentId
+    
+    // Traverse up to find the project
+    let currentParentId = parentId
+    let depth = 0
+    const maxDepth = 10
+    
+    while (currentParentId && depth < maxDepth) {
+      try {
+        const parentResponse = await fetch(`${baseUrl}/entity/${currentParentId}`, {
+          headers: {
+            'Accept': 'application/json',
+          },
+        })
+        
+        if (parentResponse.ok) {
+          const parentData = await parentResponse.json()
+          
+          // If this is the direct parent, store its info
+          if (currentParentId === parentId) {
+            parentName = parentData.name || 'Parent Folder'
+            parentDescription = parentData.description || null
+          }
+          
+          // Check if this is a project
+          if (parentData.concreteType && parentData.concreteType.includes('Project')) {
+            projectId = parentData.id
+            projectName = parentData.name
+            break
+          }
+          
+          // Move up to the next parent
+          currentParentId = parentData.parentId
+          depth++
+        } else {
+          break
+        }
+      } catch (err) {
+        console.error(`Error fetching parent ${currentParentId}:`, err)
+        break
+      }
+    }
     
     if (parentId) {
       try {
@@ -81,43 +124,43 @@ export async function GET(request: NextRequest) {
           },
         })
         
-        if (parentResponse.ok) {
-          const parentData = await parentResponse.json()
-          parentName = parentData.name || 'Parent Folder'
-          parentDescription = parentData.description || null
-          
-          // Try to fetch wiki content for the project
-          try {
-            const wikiListResponse = await fetch(`${baseUrl}/entity/${parentId}/wiki2`, {
-              headers: {
-                'Accept': 'application/json',
-              },
-            })
+    // Fetch wiki content for the project if we found one
+    if (projectId) {
+      try {
+        const wikiListResponse = await fetch(`${baseUrl}/entity/${projectId}/wiki2`, {
+          headers: {
+            'Accept': 'application/json',
+          },
+        })
+        
+        if (wikiListResponse.ok) {
+          const wikiListData = await wikiListResponse.json()
+          if (wikiListData && wikiListData.id) {
+            const wikiResponse = await fetch(
+              `${baseUrl}/entity/${projectId}/wiki/${wikiListData.id}`,
+              {
+                headers: {
+                  'Accept': 'application/json',
+                },
+              }
+            )
             
-            if (wikiListResponse.ok) {
-              const wikiListData = await wikiListResponse.json()
-              if (wikiListData && wikiListData.id) {
-                const wikiResponse = await fetch(
-                  `${baseUrl}/entity/${parentId}/wiki/${wikiListData.id}`,
-                  {
-                    headers: {
-                      'Accept': 'application/json',
-                    },
-                  }
-                )
-                
-                if (wikiResponse.ok) {
-                  const wikiData = await wikiResponse.json()
-                  if (wikiData.markdown) {
-                    projectWiki = wikiData.markdown
-                  }
-                }
+            if (wikiResponse.ok) {
+              const wikiData = await wikiResponse.json()
+              if (wikiData.markdown) {
+                projectWiki = wikiData.markdown
               }
             }
-          } catch (wikiErr) {
-            console.error('Error fetching wiki:', wikiErr)
           }
         }
+      } catch (wikiErr) {
+        console.error('Error fetching wiki:', wikiErr)
+      }
+    }
+    
+    // Fetch children of the direct parent folder
+    if (parentId) {
+      try {
         
         // Fetch children of the parent folder using POST endpoint
         const childrenResponse = await fetch(`${baseUrl}/entity/children`, {
@@ -159,6 +202,8 @@ export async function GET(request: NextRequest) {
       parentId: parentId || null,
       parentName: parentName,
       parentDescription: parentDescription,
+      projectId: projectId,
+      projectName: projectName,
       projectWiki: projectWiki,
       siblings: siblings,
       synapseUrl: `https://www.synapse.org/#!Synapse:${synId}`,

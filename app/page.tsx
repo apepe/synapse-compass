@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import FolderTree from '@/components/FolderTree'
-import { generateEntityDescription } from '@/lib/description'
+import TypingDescription from '@/components/TypingDescription'
 
 interface EntityData {
   name: string
@@ -15,6 +15,8 @@ interface EntityData {
   parentId: string | null
   parentName: string | null
   parentDescription: string | null
+  projectId: string | null
+  projectName: string | null
   projectWiki: string | null
   siblings: Array<{ id: string; name: string; type: string }>
   synapseUrl: string
@@ -25,6 +27,8 @@ function HomeContent() {
   const [entityData, setEntityData] = useState<EntityData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [aiDescription, setAiDescription] = useState<string | null>(null)
+  const [generatingDescription, setGeneratingDescription] = useState(false)
   const searchParams = useSearchParams()
 
   // Check for synId in URL parameter on mount
@@ -76,11 +80,52 @@ function HomeContent() {
 
       const data = await response.json()
       setEntityData(data)
+      
+      // Generate AI description after entity data is loaded
+      if (data) {
+        generateAiDescription(data)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
       setEntityData(null)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const generateAiDescription = async (data: EntityData) => {
+    setGeneratingDescription(true)
+    setAiDescription(null)
+    
+    try {
+      const response = await fetch('/api/generate-description', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          entityName: data.name,
+          entityType: data.type,
+          entityDescription: data.description,
+          parentName: data.parentName,
+          parentDescription: data.parentDescription,
+          projectName: data.projectName,
+          projectWiki: data.projectWiki,
+        }),
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate description')
+      }
+      
+      const result = await response.json()
+      setAiDescription(result.description)
+    } catch (err) {
+      console.error('Error generating AI description:', err)
+      // Fallback to basic description if AI generation fails
+      setAiDescription(null)
+    } finally {
+      setGeneratingDescription(false)
     }
   }
 
@@ -175,16 +220,18 @@ function HomeContent() {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <p className="text-gray-700 leading-relaxed">
-                    {generateEntityDescription({
-                      name: entityData.name,
-                      type: entityData.type,
-                      description: entityData.description,
-                      parentName: entityData.parentName,
-                      parentDescription: entityData.parentDescription,
-                      projectWiki: entityData.projectWiki,
-                    })}
-                  </p>
+                  {generatingDescription && !aiDescription ? (
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-transparent"></div>
+                      <span className="text-sm">Generating description...</span>
+                    </div>
+                  ) : aiDescription ? (
+                    <TypingDescription text={aiDescription} />
+                  ) : (
+                    <p className="text-gray-700 leading-relaxed">
+                      Loading description...
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
