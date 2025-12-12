@@ -9,8 +9,13 @@ interface EntityData {
   name: string
   id: string
   type: string
+  description: string | null
+  createdOn: string | null
+  modifiedOn: string | null
   parentId: string | null
   parentName: string | null
+  parentDescription: string | null
+  projectWiki: string | null
   siblings: Array<{ id: string; name: string; type: string }>
   synapseUrl: string
 }
@@ -92,30 +97,32 @@ function HomeContent() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0f0f23] text-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-semibold text-gray-100 mb-2">Synapse Compass</h1>
-          <p className="text-sm text-gray-400">
+    <main className="min-h-screen bg-white">
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        {/* Header */}
+        <div className="mb-8 border-b border-gray-200 pb-6">
+          <h1 className="text-3xl font-semibold text-gray-900 mb-2">Synapse Compass</h1>
+          <p className="text-gray-600">
             Navigate Synapse.org entities in their network context
           </p>
         </div>
 
-        <div className="mb-6">
+        {/* Search Form */}
+        <div className="mb-8">
           <form onSubmit={handleSubmit}>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <input
                 id="synId"
                 type="text"
                 value={synId}
                 onChange={(e) => setSynId(e.target.value)}
                 placeholder="Enter Synapse ID (e.g., syn7208917)"
-                className="flex-1 px-4 py-3 bg-[#1a1a2e] border border-gray-700 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:border-gray-600 transition-colors"
+                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white font-medium rounded-lg focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? 'Loading...' : 'Lookup'}
               </button>
@@ -123,23 +130,44 @@ function HomeContent() {
           </form>
 
           {error && (
-            <div className="mt-4 p-3 bg-red-900/20 border border-red-800/50 rounded-lg">
-              <p className="text-sm text-red-400">{error}</p>
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-800">{error}</p>
             </div>
           )}
         </div>
 
         {loading && (
           <div className="text-center py-16">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gray-600 border-t-gray-400 mb-4"></div>
-            <p className="text-gray-400 text-sm">Fetching entity information...</p>
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-blue-600 mb-4"></div>
+            <p className="text-gray-600 text-sm">Fetching entity information...</p>
           </div>
         )}
 
         {entityData && !loading && (
-          <div className="space-y-6">
+          <div className="space-y-8">
+            {/* Entity Title Section */}
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-3">{entityData.name}</h2>
+              <div className="flex items-center gap-3 text-sm text-gray-600">
+                <span className="px-2.5 py-1 bg-gray-100 rounded-md text-gray-700 font-medium">
+                  {entityData.type.split('.').pop()}
+                </span>
+                <a
+                  href={entityData.synapseUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 transition-colors"
+                >
+                  View on Synapse
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              </div>
+            </div>
+
             {/* ChatGPT-style Description */}
-            <div className="bg-[#1a1a2e] rounded-lg border border-gray-800 p-6">
+            <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -147,11 +175,14 @@ function HomeContent() {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <p className="text-gray-200 leading-relaxed">
+                  <p className="text-gray-700 leading-relaxed">
                     {generateEntityDescription({
                       name: entityData.name,
                       type: entityData.type,
+                      description: entityData.description,
                       parentName: entityData.parentName,
+                      parentDescription: entityData.parentDescription,
+                      projectWiki: entityData.projectWiki,
                     })}
                   </p>
                 </div>
@@ -166,24 +197,6 @@ function HomeContent() {
               parentName={entityData.parentName}
               siblings={entityData.siblings}
             />
-
-            {/* Entity Metadata */}
-            <div className="flex items-center gap-4 text-xs text-gray-400">
-              <span className="px-2 py-1 bg-gray-800 rounded text-gray-300">
-                {entityData.type.split('.').pop()}
-              </span>
-              <a
-                href={entityData.synapseUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-gray-300 hover:underline flex items-center gap-1 transition-colors"
-              >
-                View on Synapse
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
-            </div>
           </div>
         )}
       </div>
@@ -194,10 +207,10 @@ function HomeContent() {
 export default function Home() {
   return (
     <Suspense fallback={
-      <main className="min-h-screen bg-[#0f0f23] text-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-semibold text-gray-100 mb-2">Synapse Compass</h1>
-          <p className="text-sm text-gray-400">Loading...</p>
+      <main className="min-h-screen bg-white py-12 px-6">
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-3xl font-semibold text-gray-900 mb-2">Synapse Compass</h1>
+          <p className="text-gray-600">Loading...</p>
         </div>
       </main>
     }>

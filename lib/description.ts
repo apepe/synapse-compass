@@ -3,7 +3,10 @@
 interface EntityInfo {
   name: string
   type: string
+  description: string | null
   parentName: string | null
+  parentDescription: string | null
+  projectWiki: string | null
 }
 
 const getFileTypeDescription = (fileName: string, type: string): string => {
@@ -68,6 +71,31 @@ export function generateEntityDescription(entity: EntityInfo): string {
   const fileTypeDesc = getFileTypeDescription(entity.name, entity.type)
   const projectName = entity.parentName || 'a Synapse project'
   
-  return `${entity.name} is ${fileTypeDesc} which is part of a Synapse project called "${projectName}".`
+  // Start with basic description
+  let description = `${entity.name} is ${fileTypeDesc}`
+  
+  // Add entity description if available
+  if (entity.description && entity.description.trim()) {
+    description += ` that ${entity.description.trim()}`
+  }
+  
+  // Add project context
+  description += ` which is part of a Synapse project called "${projectName}"`
+  
+  // Add project description or wiki content if available
+  if (entity.projectWiki && entity.projectWiki.trim()) {
+    // Extract first sentence or first 200 chars from wiki
+    const wikiText = entity.projectWiki.trim().split('\n')[0].substring(0, 200)
+    if (wikiText.length > 0) {
+      description += `. The project: ${wikiText}${wikiText.length >= 200 ? '...' : ''}`
+    }
+  } else if (entity.parentDescription && entity.parentDescription.trim()) {
+    const parentDesc = entity.parentDescription.trim().substring(0, 200)
+    description += `. ${parentDesc}${parentDesc.length >= 200 ? '...' : ''}`
+  } else {
+    description += '.'
+  }
+  
+  return description
 }
 

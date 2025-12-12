@@ -68,6 +68,8 @@ export async function GET(request: NextRequest) {
     // Fetch sibling entities (children of the parent folder)
     let siblings: Array<{ id: string; name: string; type: string }> = []
     let parentName: string | null = null
+    let parentDescription: string | null = null
+    let projectWiki: string | null = null
     const parentId = entityData.parentId
     
     if (parentId) {
@@ -82,6 +84,39 @@ export async function GET(request: NextRequest) {
         if (parentResponse.ok) {
           const parentData = await parentResponse.json()
           parentName = parentData.name || 'Parent Folder'
+          parentDescription = parentData.description || null
+          
+          // Try to fetch wiki content for the project
+          try {
+            const wikiListResponse = await fetch(`${baseUrl}/entity/${parentId}/wiki2`, {
+              headers: {
+                'Accept': 'application/json',
+              },
+            })
+            
+            if (wikiListResponse.ok) {
+              const wikiListData = await wikiListResponse.json()
+              if (wikiListData && wikiListData.id) {
+                const wikiResponse = await fetch(
+                  `${baseUrl}/entity/${parentId}/wiki/${wikiListData.id}`,
+                  {
+                    headers: {
+                      'Accept': 'application/json',
+                    },
+                  }
+                )
+                
+                if (wikiResponse.ok) {
+                  const wikiData = await wikiResponse.json()
+                  if (wikiData.markdown) {
+                    projectWiki = wikiData.markdown
+                  }
+                }
+              }
+            }
+          } catch (wikiErr) {
+            console.error('Error fetching wiki:', wikiErr)
+          }
         }
         
         // Fetch children of the parent folder using POST endpoint
@@ -118,8 +153,13 @@ export async function GET(request: NextRequest) {
       name: entityData.name || 'Unknown',
       id: entityData.id,
       type: entityData.concreteType,
+      description: entityData.description || null,
+      createdOn: entityData.createdOn || null,
+      modifiedOn: entityData.modifiedOn || null,
       parentId: parentId || null,
       parentName: parentName,
+      parentDescription: parentDescription,
+      projectWiki: projectWiki,
       siblings: siblings,
       synapseUrl: `https://www.synapse.org/#!Synapse:${synId}`,
     })
