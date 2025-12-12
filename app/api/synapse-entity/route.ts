@@ -130,7 +130,10 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching ACL:', err)
     }
     
-    // Fetch sibling entities (children of the parent folder)
+    // Check if this entity is itself a Project
+    const isProject = entityData.concreteType && entityData.concreteType.includes('Project')
+    
+    // Fetch sibling entities (children of the parent folder) OR children of this project
     let siblings: Array<{ id: string; name: string; type: string }> = []
     let parentName: string | null = null
     let parentDescription: string | null = null
@@ -139,49 +142,114 @@ export async function GET(request: NextRequest) {
     let projectName: string | null = null
     const parentId = entityData.parentId
     
-    // Traverse up to find the project
-    let currentParentId = parentId
-    let depth = 0
-    const maxDepth = 10
-    
-    while (currentParentId && depth < maxDepth) {
+    if (isProject) {
+      // If this is a project, it IS the project
+      projectId = synId
+      projectName = entityData.name
+      
+      // Fetch children of this project
       try {
-        const parentResponse = await fetch(`${baseUrl}/entity/${currentParentId}`, {
+        const childrenResponse = await fetch(`${baseUrl}/entity/children`, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            parentId: synId,
+            includeTypes: ['file', 'folder', 'project', 'table', 'link']
+          }),
+        })
+        
+        if (childrenResponse.ok) {
+          const childrenData = await childrenResponse.json()
+          if (childrenData.page && Array.isArray(childrenData.page)) {
+            siblings = childrenData.page.map((child: any) => ({
+              id: child.id,
+              name: child.name || 'Unknown',
+              type: child.type || 'Unknown'
+            }))
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching project children:', err)
+      }
+      
+      // Fetch wiki for this project
+      try {
+        const wikiListResponse = await fetch(`${baseUrl}/entity/${synId}/wiki2`, {
           headers: {
             'Accept': 'application/json',
           },
         })
         
-        if (parentResponse.ok) {
-          const parentData = await parentResponse.json()
-          
-          // If this is the direct parent, store its info
-          if (currentParentId === parentId) {
-            parentName = parentData.name || 'Parent Folder'
-            parentDescription = parentData.description || null
+        if (wikiListResponse.ok) {
+          const wikiListData = await wikiListResponse.json()
+          if (wikiListData && wikiListData.id) {
+            const wikiResponse = await fetch(
+              `${baseUrl}/entity/${synId}/wiki/${wikiListData.id}`,
+              {
+                headers: {
+                  'Accept': 'application/json',
+                },
+              }
+            )
+            
+            if (wikiResponse.ok) {
+              const wikiData = await wikiResponse.json()
+              if (wikiData.markdown) {
+                projectWiki = wikiData.markdown
+              }
+            }
           }
+        }
+      } catch (wikiErr) {
+        console.error('Error fetching project wiki:', wikiErr)
+      }
+    } else {
+      // Not a project - traverse up to find the project
+      let currentParentId = parentId
+      let depth = 0
+      const maxDepth = 10
+      
+      while (currentParentId && depth < maxDepth) {
+        try {
+          const parentResponse = await fetch(`${baseUrl}/entity/${currentParentId}`, {
+            headers: {
+              'Accept': 'application/json',
+            },
+          })
           
-          // Check if this is a project
-          if (parentData.concreteType && parentData.concreteType.includes('Project')) {
-            projectId = parentData.id
-            projectName = parentData.name
+          if (parentResponse.ok) {
+            const parentData = await parentResponse.json()
+            
+            // If this is the direct parent, store its info
+            if (currentParentId === parentId) {
+              parentName = parentData.name || 'Parent Folder'
+              parentDescription = parentData.description || null
+            }
+            
+            // Check if this is a project
+            if (parentData.concreteType && parentData.concreteType.includes('Project')) {
+              projectId = parentData.id
+              projectName = parentData.name
+              break
+            }
+            
+            // Move up to the next parent
+            currentParentId = parentData.parentId
+            depth++
+          } else {
             break
           }
-          
-          // Move up to the next parent
-          currentParentId = parentData.parentId
-          depth++
-        } else {
+        } catch (err) {
+          console.error(`Error fetching parent ${currentParentId}:`, err)
           break
         }
-      } catch (err) {
-        console.error(`Error fetching parent ${currentParentId}:`, err)
-        break
       }
-    }
-    
-    // Fetch wiki content for the project if we found one
-    if (projectId) {
+      
+      // Fetch wiki content for the project if we found one
+      if (projectId) {
       try {
         const wikiListResponse = await fetch(`${baseUrl}/entity/${projectId}/wiki2`, {
           headers: {

@@ -131,6 +131,7 @@ function HomeContent() {
           parentDescription: data.parentDescription,
           projectName: data.projectName,
           projectWiki: data.projectWiki,
+          siblings: data.siblings,
         }),
       })
       

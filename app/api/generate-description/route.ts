@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const { entityName, entityType, entityDescription, parentName, parentDescription, projectName, projectWiki } = await request.json()
+    const { entityName, entityType, entityDescription, parentName, parentDescription, projectName, projectWiki, siblings } = await request.json()
 
     if (!entityName || !entityType) {
       return NextResponse.json(
@@ -20,18 +20,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Build context for ChatGPT
+    const isProject = entityType && entityType.includes('Project')
     let context = `Entity: ${entityName}\nType: ${entityType}\n`
     
     if (entityDescription) {
       context += `Description: ${entityDescription}\n`
     }
     
-    if (projectName || parentName) {
-      context += `Project: ${projectName || parentName}\n`
-    }
-    
-    if (parentDescription) {
-      context += `Project Description: ${parentDescription}\n`
+    if (isProject) {
+      context += `This is a Synapse Project.\n`
+      if (siblings && Array.isArray(siblings) && siblings.length === 0) {
+        context += `This project currently has no content (no files, folders, or other entities). It may be a new project or a test project.\n`
+      } else if (siblings && siblings.length > 0) {
+        context += `This project contains ${siblings.length} item(s).\n`
+      }
+    } else {
+      if (projectName || parentName) {
+        context += `Project: ${projectName || parentName}\n`
+      }
+      
+      if (parentDescription) {
+        context += `Project Description: ${parentDescription}\n`
+      }
     }
     
     if (projectWiki) {
@@ -43,7 +53,7 @@ export async function POST(request: NextRequest) {
       context += `Project Wiki Content:\n${cleanWiki}\n`
     }
 
-    const prompt = `You are a helpful assistant that provides clear, informative descriptions of Synapse.org entities. Based on the following information, generate a comprehensive, natural-sounding description in the style of ChatGPT. Be specific and informative, but concise (2-3 sentences). Focus on what the entity is, its purpose, and its context within the project.
+    const prompt = `You are a helpful assistant that provides clear, informative descriptions of Synapse.org entities. Based on the following information, generate a comprehensive, natural-sounding description in the style of ChatGPT. Be specific and informative, but concise (2-3 sentences). ${isProject ? 'If this is a project with no content, mention that it appears to be empty and may be a test project or newly created.' : 'Focus on what the entity is, its purpose, and its context within the project.'}
 
 ${context}
 
