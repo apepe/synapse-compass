@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import TypingDescription from '@/components/TypingDescription'
 
 interface ProjectInfoWidgetProps {
   projectId: string | null
@@ -88,7 +87,7 @@ export default function ProjectInfoWidget({ projectId, projectName, projectWiki,
               {generatingSummary ? (
                 <p className="text-gray-500">Generating summary...</p>
               ) : projectSummary ? (
-                <TypingDescription text={projectSummary} />
+                <p>{projectSummary}</p>
               ) : null}
             </div>
           </div>
