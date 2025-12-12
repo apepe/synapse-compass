@@ -104,20 +104,40 @@ export default function AccessInfoWidget({ accessInfo, accessRequirements, entit
 
     // Check ACL for public access
     if (accessInfo.accessControlList && accessInfo.accessControlList.length > 0) {
-      const hasPublicAccess = accessInfo.accessControlList.some((acl: any) => 
-        acl.principalId === 273948 || // Public user ID
-        acl.principalId === '273948' || // Public user ID (string)
-        (Array.isArray(acl.accessType) && acl.accessType.includes('READ')) ||
-        (typeof acl.accessType === 'string' && acl.accessType.includes('READ'))
+      // Find public user access (principalId 273948)
+      const publicAccess = accessInfo.accessControlList.find((acl: any) => 
+        acl.principalId === 273948 || acl.principalId === '273948'
       )
       
-      if (hasPublicAccess) {
-        return {
-          level: 'Public',
-          description: 'This entity is publicly accessible. Anyone can view and download it.',
-          requirements: null,
-          requirementName: null,
-          action: null,
+      if (publicAccess) {
+        const accessTypes = Array.isArray(publicAccess.accessType) 
+          ? publicAccess.accessType 
+          : (typeof publicAccess.accessType === 'string' ? [publicAccess.accessType] : [])
+        
+        // Check if public has both READ and DOWNLOAD access
+        const hasRead = accessTypes.includes('READ')
+        const hasDownload = accessTypes.includes('DOWNLOAD')
+        
+        if (hasRead && hasDownload) {
+          return {
+            level: 'Public',
+            description: 'This entity is publicly accessible. Anyone can view and download it.',
+            requirements: null,
+            requirementName: null,
+            action: null,
+          }
+        } else if (hasRead) {
+          // Has READ but not DOWNLOAD - restricted
+          return {
+            level: 'Restricted',
+            description: 'This entity can be viewed but download access is restricted. You may need to request access to download.',
+            requirements: null,
+            requirementName: null,
+            action: {
+              text: 'Request Access',
+              url: `https://www.synapse.org/#!Synapse:${entityId}`,
+            },
+          }
         }
       }
       
@@ -135,16 +155,17 @@ export default function AccessInfoWidget({ accessInfo, accessRequirements, entit
     }
 
     // If ACL is empty or doesn't exist, but we successfully fetched the entity
-    // and there are no access requirements, it's likely public
-    // (The fact that we can fetch it without auth suggests public access)
-    if (!accessRequirements || accessRequirements.length === 0) {
-      return {
-        level: 'Public',
-        description: 'This entity appears to be publicly accessible. Anyone can view and download it.',
-        requirements: null,
-        requirementName: null,
-        action: null,
-      }
+    // Be conservative - if we can't determine access level, show as restricted
+    // The fact that we can fetch entity metadata doesn't mean it's fully public
+    return {
+      level: 'Restricted',
+      description: 'Access level could not be fully determined. This entity may require authentication or special permissions to view or download.',
+      requirements: null,
+      requirementName: null,
+      action: {
+        text: 'Check Access on Synapse',
+        url: `https://www.synapse.org/#!Synapse:${entityId}`,
+      },
     }
     
     // If we have access requirements, it's restricted (should have been caught above, but just in case)
