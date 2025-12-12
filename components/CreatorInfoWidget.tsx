@@ -45,29 +45,37 @@ export default function CreatorInfoWidget({ creatorInfo, createdOn, annotations 
             <div className="flex items-center gap-3">
               <div className="relative w-10 h-10">
                 {creatorInfo.profilePicUrl ? (
-                  <img 
-                    src={creatorInfo.profilePicUrl} 
-                    alt={creatorInfo.displayName || creatorInfo.userName}
-                    className="w-10 h-10 rounded-full object-cover"
-                    onError={(e) => {
-                      // Hide image on error
-                      const target = e.target as HTMLImageElement
-                      target.style.display = 'none'
-                      // Show fallback
-                      const fallback = target.nextElementSibling as HTMLElement
-                      if (fallback) fallback.style.display = 'flex'
-                    }}
-                  />
-                ) : null}
-                {/* Fallback avatar */}
-                <div 
-                  className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center"
-                  style={{ display: creatorInfo.profilePicUrl ? 'none' : 'flex' }}
-                >
-                  <span className="text-gray-600 text-sm font-medium">
-                    {(creatorInfo.displayName || creatorInfo.userName).charAt(0).toUpperCase()}
-                  </span>
-                </div>
+                  <>
+                    <img 
+                      src={creatorInfo.profilePicUrl} 
+                      alt={creatorInfo.displayName || creatorInfo.userName}
+                      className="w-10 h-10 rounded-full object-cover"
+                      onError={(e) => {
+                        // Hide image on error and show fallback
+                        const target = e.target as HTMLImageElement
+                        target.style.display = 'none'
+                        const fallback = target.nextElementSibling as HTMLElement
+                        if (fallback) fallback.style.display = 'flex'
+                      }}
+                    />
+                    {/* Fallback avatar - hidden by default, shown on image error */}
+                    <div 
+                      className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center"
+                      style={{ display: 'none' }}
+                    >
+                      <span className="text-gray-600 text-sm font-medium">
+                        {(creatorInfo.displayName || creatorInfo.userName).charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  /* Fallback avatar when no profilePicUrl */
+                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-gray-600 text-sm font-medium">
+                      {(creatorInfo.displayName || creatorInfo.userName).charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
               </div>
               <div>
                 <a
