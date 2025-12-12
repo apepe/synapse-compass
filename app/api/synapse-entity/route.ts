@@ -115,15 +115,6 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    if (parentId) {
-      try {
-        // Fetch parent entity to get its name
-        const parentResponse = await fetch(`${baseUrl}/entity/${parentId}`, {
-          headers: {
-            'Accept': 'application/json',
-          },
-        })
-        
     // Fetch wiki content for the project if we found one
     if (projectId) {
       try {
@@ -161,7 +152,6 @@ export async function GET(request: NextRequest) {
     // Fetch children of the direct parent folder
     if (parentId) {
       try {
-        
         // Fetch children of the parent folder using POST endpoint
         const childrenResponse = await fetch(`${baseUrl}/entity/children`, {
           method: 'POST',
