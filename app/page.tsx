@@ -170,10 +170,7 @@ function HomeContent() {
       <div className="max-w-6xl mx-auto px-6 py-6">
         {/* Header with Logo and Search */}
         <div className="flex items-center justify-between mb-8 border-b border-gray-200 pb-6">
-          <div className="flex items-center gap-4">
-            <Logo />
-            <ShareButton entityId={entityData?.id || null} entityName={entityData?.name || null} />
-          </div>
+          <Logo />
           
           {/* Search Form - Smaller, Top Right */}
           <div className="flex-shrink-0">
@@ -214,7 +211,10 @@ function HomeContent() {
           <div className="space-y-8">
             {/* Entity Title Section */}
             <div>
-              <h2 className="text-2xl font-semibold text-gray-900 mb-3">{entityData.name}</h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-2xl font-semibold text-gray-900">{entityData.name}</h2>
+                <ShareButton entityId={entityData.id} entityName={entityData.name} />
+              </div>
               <div className="flex items-center gap-3 text-sm text-gray-600">
                 <span className="px-2.5 py-1 bg-gray-100 rounded-md text-gray-700 font-medium">
                   {entityData.type.split('.').pop()}
