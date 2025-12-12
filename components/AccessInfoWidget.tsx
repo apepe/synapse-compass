@@ -15,15 +15,32 @@ interface AccessInfoWidgetProps {
 export default function AccessInfoWidget({ accessInfo, entityId }: AccessInfoWidgetProps) {
   // Determine access level
   const getAccessLevel = () => {
+    // If we can't fetch ACL, assume it might be restricted
     if (!accessInfo) {
       return {
-        level: 'Public',
-        description: 'This entity is publicly accessible. Anyone can view and download it.',
-        action: null,
+        level: 'Unknown',
+        description: 'Access information is not available. Visit the entity on Synapse.org to check access requirements.',
+        action: {
+          text: 'Check Access on Synapse',
+          url: `https://www.synapse.org/#!Synapse:${entityId}`,
+        },
       }
     }
 
     if (accessInfo.accessControlList && accessInfo.accessControlList.length > 0) {
+      const hasPublicAccess = accessInfo.accessControlList.some((acl: any) => 
+        acl.principalId === 273948 || // Public user ID
+        acl.accessType?.includes('READ')
+      )
+      
+      if (hasPublicAccess) {
+        return {
+          level: 'Public',
+          description: 'This entity is publicly accessible. Anyone can view and download it.',
+          action: null,
+        }
+      }
+      
       return {
         level: 'Restricted',
         description: 'This entity has restricted access. You may need to request access or join a team to view it.',
@@ -34,9 +51,10 @@ export default function AccessInfoWidget({ accessInfo, entityId }: AccessInfoWid
       }
     }
 
+    // If ACL is empty, it's likely public
     return {
       level: 'Public',
-      description: 'This entity is publicly accessible. Anyone can view and download it.',
+      description: 'This entity appears to be publicly accessible. Anyone can view and download it.',
       action: null,
     }
   }
@@ -53,7 +71,9 @@ export default function AccessInfoWidget({ accessInfo, entityId }: AccessInfoWid
             <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${
               accessLevel.level === 'Public' 
                 ? 'bg-green-100 text-green-700' 
-                : 'bg-yellow-100 text-yellow-700'
+                : accessLevel.level === 'Restricted'
+                ? 'bg-yellow-100 text-yellow-700'
+                : 'bg-gray-100 text-gray-700'
             }`}>
               {accessLevel.level}
             </span>
