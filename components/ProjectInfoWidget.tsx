@@ -4,9 +4,11 @@ interface ProjectInfoWidgetProps {
   projectId: string | null
   projectName: string | null
   projectWiki: string | null
+  projectAnnotations: Record<string, any> | null
+  projectCitations: string[]
 }
 
-export default function ProjectInfoWidget({ projectId, projectName, projectWiki }: ProjectInfoWidgetProps) {
+export default function ProjectInfoWidget({ projectId, projectName, projectWiki, projectAnnotations, projectCitations }: ProjectInfoWidgetProps) {
   // Extract a summary from the wiki (first paragraph or first few sentences)
   const getProjectSummary = (wiki: string | null) => {
     if (!wiki) return null
@@ -28,6 +30,14 @@ export default function ProjectInfoWidget({ projectId, projectName, projectWiki 
   }
 
   const projectSummary = getProjectSummary(projectWiki)
+
+  // Extract DOI from project annotations
+  const projectDoi = projectAnnotations?.stringAnnotations?.find((ann: any) => 
+    ann.key && (ann.key.toLowerCase() === 'doi' || ann.key.toLowerCase() === 'doi')
+  )?.value?.[0]
+
+  // Get unique citations
+  const uniqueCitations = Array.from(new Set(projectCitations)).filter(Boolean)
 
   if (!projectId || !projectName) {
     return null
@@ -57,11 +67,44 @@ export default function ProjectInfoWidget({ projectId, projectName, projectWiki 
           <div className="text-sm text-gray-600 font-mono">{projectId}</div>
         </div>
 
+        {/* Project DOI */}
+        {projectDoi && (
+          <div>
+            <div className="text-sm font-medium text-gray-700 mb-1">DOI</div>
+            <div className="text-sm">
+              <a
+                href={`https://doi.org/${projectDoi}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-700 hover:underline"
+              >
+                {projectDoi}
+              </a>
+            </div>
+          </div>
+        )}
+
         {/* Project Summary/Description */}
         {projectSummary && (
           <div>
             <div className="text-sm font-medium text-gray-700 mb-1">Description</div>
             <div className="text-sm text-gray-600 leading-relaxed">{projectSummary}</div>
+          </div>
+        )}
+
+        {/* Project Citations and Mentions */}
+        {uniqueCitations.length > 0 && (
+          <div>
+            <div className="text-sm font-medium text-gray-700 mb-2">
+              Citations & Mentions ({uniqueCitations.length})
+            </div>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {uniqueCitations.map((citation, index) => (
+                <div key={index} className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-200">
+                  {citation}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

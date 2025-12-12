@@ -65,32 +65,43 @@ export async function GET(request: NextRequest) {
 
     const entityData = await entityResponse.json()
     
-    // Fetch creator information
-    let creatorInfo: { id: string; userName: string; displayName: string | null; profilePicUrl: string | null } | null = null
-    if (entityData.createdBy) {
+    // Helper function to fetch user profile
+    const fetchUserProfile = async (userId: string) => {
       try {
-        const creatorResponse = await fetch(`${baseUrl}/userProfile/${entityData.createdBy}`, {
+        const userResponse = await fetch(`${baseUrl}/userProfile/${userId}`, {
           headers: {
             'Accept': 'application/json',
           },
         })
-        if (creatorResponse.ok) {
-          const creatorData = await creatorResponse.json()
-          creatorInfo = {
-            id: creatorData.ownerId || entityData.createdBy,
-            userName: creatorData.userName || 'Unknown',
-            displayName: creatorData.firstName && creatorData.lastName 
-              ? `${creatorData.firstName} ${creatorData.lastName}` 
-              : creatorData.displayName || null,
-            // Try to construct profile image URL - Synapse uses file handle associations
-            profilePicUrl: creatorData.profilePicureFileHandleId 
-              ? `https://www.synapse.org/portal/filehandleassociation?fileHandleId=${creatorData.profilePicureFileHandleId}&associationObjectType=UserProfile&associationObjectId=${creatorData.ownerId || entityData.createdBy}`
+        if (userResponse.ok) {
+          const userData = await userResponse.json()
+          return {
+            id: userData.ownerId || userId,
+            userName: userData.userName || 'Unknown',
+            displayName: userData.firstName && userData.lastName 
+              ? `${userData.firstName} ${userData.lastName}` 
+              : userData.displayName || null,
+            profilePicUrl: userData.profilePicureFileHandleId 
+              ? `https://www.synapse.org/portal/filehandleassociation?fileHandleId=${userData.profilePicureFileHandleId}&associationObjectType=UserProfile&associationObjectId=${userData.ownerId || userId}`
               : null,
           }
         }
       } catch (err) {
-        console.error('Error fetching creator info:', err)
+        console.error('Error fetching user profile:', err)
       }
+      return null
+    }
+
+    // Fetch creator information
+    let creatorInfo: { id: string; userName: string; displayName: string | null; profilePicUrl: string | null } | null = null
+    if (entityData.createdBy) {
+      creatorInfo = await fetchUserProfile(entityData.createdBy)
+    }
+
+    // Fetch modifier information
+    let modifierInfo: { id: string; userName: string; displayName: string | null; profilePicUrl: string | null } | null = null
+    if (entityData.modifiedBy && entityData.modifiedBy !== entityData.createdBy) {
+      modifierInfo = await fetchUserProfile(entityData.modifiedBy)
     }
     
     // Fetch annotations (may contain DOI, citations, etc.)
@@ -222,6 +233,8 @@ export async function GET(request: NextRequest) {
     let projectWiki: string | null = null
     let projectId: string | null = null
     let projectName: string | null = null
+    let projectAnnotations: Record<string, any> | null = null
+    let projectCitations: string[] = []
     const parentId = entityData.parentId
     
     if (isProject) {
@@ -330,7 +343,7 @@ export async function GET(request: NextRequest) {
         }
       }
       
-      // Fetch wiki content for the project if we found one
+      // Fetch wiki content and annotations for the project if we found one
       if (projectId) {
         try {
           const wikiListResponse = await fetch(`${baseUrl}/entity/${projectId}/wiki2`, {
@@ -359,9 +372,94 @@ export async function GET(request: NextRequest) {
               }
             }
           }
+
+          // Fetch project annotations (for DOI)
+          try {
+            const projectAnnotationsResponse = await fetch(`${baseUrl}/entity/${projectId}/annotations2`, {
+              headers: {
+                'Accept': 'application/json',
+              },
+            })
+            if (projectAnnotationsResponse.ok) {
+              projectAnnotations = await projectAnnotationsResponse.json()
+            }
+          } catch (annErr) {
+            console.error('Error fetching project annotations:', annErr)
+          }
         } catch (wikiErr) {
           console.error('Error fetching wiki:', wikiErr)
         }
+      }
+
+      // Helper function to recursively fetch all children and their citations
+      const fetchAllChildrenCitations = async (parentId: string, depth: number = 0, maxDepth: number = 3): Promise<string[]> => {
+        if (depth > maxDepth) return []
+        
+        const citations: string[] = []
+        try {
+          const childrenResponse = await fetch(`${baseUrl}/entity/children`, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              parentId: parentId,
+              includeTypes: ['org.sagebionetworks.repo.model.Folder', 'org.sagebionetworks.repo.model.FileEntity', 'org.sagebionetworks.repo.model.TableEntity'],
+              includeTotalChildCount: false,
+            }),
+          })
+
+          if (childrenResponse.ok) {
+            const childrenData = await childrenResponse.json()
+            const children = childrenData.page || []
+
+            for (const child of children) {
+              // Fetch annotations for this child
+              try {
+                const childAnnotationsResponse = await fetch(`${baseUrl}/entity/${child.id}/annotations2`, {
+                  headers: {
+                    'Accept': 'application/json',
+                  },
+                })
+                if (childAnnotationsResponse.ok) {
+                  const childAnnotations = await childAnnotationsResponse.json()
+                  
+                  // Extract citations and mentions
+                  if (childAnnotations.stringAnnotations) {
+                    const citationAnn = childAnnotations.stringAnnotations.find((ann: any) => 
+                      ann.key && (ann.key.toLowerCase() === 'citation' || ann.key.toLowerCase() === 'mention')
+                    )
+                    if (citationAnn && citationAnn.value && citationAnn.value.length > 0) {
+                      citations.push(...citationAnn.value)
+                    }
+                  }
+                }
+              } catch (err) {
+                // Skip if we can't fetch annotations
+              }
+
+              // Recursively fetch children if it's a folder
+              if (child.type && child.type.includes('Folder')) {
+                const childCitations = await fetchAllChildrenCitations(child.id, depth + 1, maxDepth)
+                citations.push(...childCitations)
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Error fetching children citations:', err)
+        }
+
+        return citations
+      }
+
+      // Fetch all citations from project children (only if this is a project or we have a project)
+      if (projectId && projectId !== synId) {
+        // Only fetch if we're not already looking at the project itself
+        projectCitations = await fetchAllChildrenCitations(projectId)
+      } else if (isProject) {
+        // If we're looking at the project itself, fetch its children
+        projectCitations = await fetchAllChildrenCitations(synId)
       }
       
       // Fetch children of the direct parent folder
@@ -407,6 +505,8 @@ export async function GET(request: NextRequest) {
       modifiedOn: entityData.modifiedOn || null,
       createdBy: entityData.createdBy || null,
       creatorInfo: creatorInfo,
+      modifiedBy: entityData.modifiedBy || null,
+      modifierInfo: modifierInfo,
       annotations: annotations,
       accessInfo: accessInfo,
       parentId: isProject ? null : (parentId || null),
@@ -415,6 +515,8 @@ export async function GET(request: NextRequest) {
       projectId: projectId,
       projectName: projectName,
       projectWiki: projectWiki,
+      projectAnnotations: projectAnnotations,
+      projectCitations: projectCitations,
       siblings: siblings,
       synapseUrl: `https://www.synapse.org/#!Synapse:${synId}`,
     })

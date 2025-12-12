@@ -33,6 +33,8 @@ interface EntityData {
   modifiedOn: string | null
   createdBy: string | null
   creatorInfo: CreatorInfo | null
+  modifiedBy: string | null
+  modifierInfo: CreatorInfo | null
   annotations: Record<string, any> | null
   accessInfo: AccessInfo | null
   accessRequirements: any[] | null
@@ -42,6 +44,8 @@ interface EntityData {
   projectId: string | null
   projectName: string | null
   projectWiki: string | null
+  projectAnnotations: Record<string, any> | null
+  projectCitations: string[]
   siblings: Array<{ id: string; name: string; type: string }>
   synapseUrl: string
 }
@@ -269,6 +273,7 @@ function HomeContent() {
                 creatorInfo={entityData.creatorInfo}
                 createdOn={entityData.createdOn}
                 modifiedOn={entityData.modifiedOn}
+                modifierInfo={entityData.modifierInfo}
                 annotations={entityData.annotations}
               />
               <AccessInfoWidget
@@ -284,6 +289,8 @@ function HomeContent() {
                 projectId={entityData.projectId}
                 projectName={entityData.projectName}
                 projectWiki={entityData.projectWiki}
+                projectAnnotations={entityData.projectAnnotations}
+                projectCitations={entityData.projectCitations}
               />
             )}
 

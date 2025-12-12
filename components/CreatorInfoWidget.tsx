@@ -11,10 +11,11 @@ interface CreatorInfoWidgetProps {
   creatorInfo: CreatorInfo | null
   createdOn: string | null
   modifiedOn: string | null
+  modifierInfo: CreatorInfo | null
   annotations: Record<string, any> | null
 }
 
-export default function CreatorInfoWidget({ creatorInfo, createdOn, modifiedOn, annotations }: CreatorInfoWidgetProps) {
+export default function CreatorInfoWidget({ creatorInfo, createdOn, modifiedOn, modifierInfo, annotations }: CreatorInfoWidgetProps) {
   // Extract DOI from annotations
   const doi = annotations?.stringAnnotations?.find((ann: any) => 
     ann.key === 'doi' || ann.key === 'DOI'
@@ -107,11 +108,56 @@ export default function CreatorInfoWidget({ creatorInfo, createdOn, modifiedOn, 
           </div>
         )}
 
-        {/* Modified Date */}
+        {/* Modified Date and By */}
         {formattedModifiedDate && (
           <div>
-            <div className="text-sm font-medium text-gray-700 mb-1">Modified</div>
-            <div className="text-sm text-gray-600">{formattedModifiedDate}</div>
+            <div className="text-sm font-medium text-gray-700 mb-2">Modified</div>
+            <div className="text-sm text-gray-600 mb-2">{formattedModifiedDate}</div>
+            {modifierInfo && (
+              <div className="flex items-center gap-3">
+                <div className="relative w-8 h-8">
+                  {modifierInfo.profilePicUrl ? (
+                    <>
+                      <img 
+                        src={modifierInfo.profilePicUrl} 
+                        alt={modifierInfo.displayName || modifierInfo.userName}
+                        className="w-8 h-8 rounded-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.style.display = 'none'
+                          const fallback = target.nextElementSibling as HTMLElement
+                          if (fallback) fallback.style.display = 'flex'
+                        }}
+                      />
+                      <div 
+                        className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center"
+                        style={{ display: 'none' }}
+                      >
+                        <span className="text-gray-600 text-xs font-medium">
+                          {(modifierInfo.displayName || modifierInfo.userName).charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                      <span className="text-gray-600 text-xs font-medium">
+                        {(modifierInfo.displayName || modifierInfo.userName).charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <a
+                    href={`https://www.synapse.org/#!Profile:${modifierInfo.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-700 hover:underline text-sm font-medium"
+                  >
+                    {modifierInfo.displayName || modifierInfo.userName}
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
