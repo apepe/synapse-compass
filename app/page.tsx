@@ -6,6 +6,7 @@ import FolderTree from '@/components/FolderTree'
 import TypingDescription from '@/components/TypingDescription'
 import CreatorInfoWidget from '@/components/CreatorInfoWidget'
 import AccessInfoWidget from '@/components/AccessInfoWidget'
+import Logo from '@/components/Logo'
 
 interface CreatorInfo {
   id: string
@@ -165,43 +166,38 @@ function HomeContent() {
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* Header */}
-        <div className="mb-8 border-b border-gray-200 pb-6">
-          <h1 className="text-3xl font-semibold text-gray-900 mb-2">Synapse Compass</h1>
-          <p className="text-gray-600">
-            Navigate Synapse.org entities in their network context
-          </p>
-        </div>
-
-        {/* Search Form */}
-        <div className="mb-8">
-          <form onSubmit={handleSubmit}>
-            <div className="flex gap-3">
+      <div className="max-w-6xl mx-auto px-6 py-6">
+        {/* Header with Logo and Search */}
+        <div className="flex items-center justify-between mb-8 border-b border-gray-200 pb-6">
+          <Logo />
+          
+          {/* Search Form - Smaller, Top Right */}
+          <div className="flex-shrink-0">
+            <form onSubmit={handleSubmit} className="flex gap-2">
               <input
                 id="synId"
                 type="text"
                 value={synId}
                 onChange={(e) => setSynId(e.target.value)}
-                placeholder="Enter Synapse ID (e.g., syn7208917)"
-                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                placeholder="Enter SynID (e.g., syn7208917)"
+                className="w-64 px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {loading ? 'Loading...' : 'Lookup'}
+                {loading ? '...' : 'Lookup'}
               </button>
-            </div>
-          </form>
-
-          {error && (
-            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-800">{error}</p>
-            </div>
-          )}
+            </form>
+          </div>
         </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-800">{error}</p>
+          </div>
+        )}
 
         {loading && (
           <div className="text-center py-16">
