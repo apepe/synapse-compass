@@ -5,9 +5,10 @@ import { useState, useRef, useEffect } from 'react'
 interface ShareButtonProps {
   entityId?: string | null
   entityName?: string | null
+  description?: string | null
 }
 
-export default function ShareButton({ entityId, entityName }: ShareButtonProps) {
+export default function ShareButton({ entityId, entityName, description }: ShareButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -38,6 +39,10 @@ export default function ShareButton({ entityId, entityName }: ShareButtonProps) 
   }
 
   const getShareText = () => {
+    if (description) {
+      // Use the ChatGPT description if available
+      return description
+    }
     if (entityName && entityId) {
       return `Check out ${entityName} on Synapse.org Compass: ${entityId}`
     }
@@ -47,7 +52,15 @@ export default function ShareButton({ entityId, entityName }: ShareButtonProps) 
   const shareUrl = getShareUrl()
   const shareText = getShareText()
 
-  const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`
+  // LinkedIn share URL with summary (description)
+  const linkedInParams = new URLSearchParams({
+    url: shareUrl,
+  })
+  if (description) {
+    linkedInParams.append('summary', description)
+  }
+  const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?${linkedInParams.toString()}`
+  
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`
 
   const handleCopyLink = async () => {

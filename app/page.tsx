@@ -213,7 +213,11 @@ function HomeContent() {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-2xl font-semibold text-gray-900">{entityData.name}</h2>
-                <ShareButton entityId={entityData.id} entityName={entityData.name} />
+                <ShareButton 
+                  entityId={entityData.id} 
+                  entityName={entityData.name}
+                  description={aiDescription}
+                />
               </div>
               <div className="flex items-center gap-3 text-sm text-gray-600">
                 <span className="px-2.5 py-1 bg-gray-100 rounded-md text-gray-700 font-medium">
