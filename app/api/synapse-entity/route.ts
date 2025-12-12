@@ -110,13 +110,17 @@ export async function GET(request: NextRequest) {
     }
     
     // Fetch access information
+    // If we successfully fetched the entity, we have at least READ access
     let accessInfo: { canView: boolean; canEdit: boolean; canDownload: boolean; accessControlList: any[] } | null = null
+    let aclInheritedFrom: string | null = null
+    
     try {
       const aclResponse = await fetch(`${baseUrl}/entity/${synId}/acl`, {
         headers: {
           'Accept': 'application/json',
         },
       })
+      
       if (aclResponse.ok) {
         const aclData = await aclResponse.json()
         accessInfo = {
@@ -125,10 +129,67 @@ export async function GET(request: NextRequest) {
           canDownload: false, // Would need to check permissions
           accessControlList: aclData.resourceAccess || [],
         }
+      } else {
+        // Check if ACL inherits from parent
+        const errorData = await aclResponse.json().catch(() => ({}))
+        if (errorData.reason && errorData.reason.includes('inherits its permissions from')) {
+          // Extract the parent entity ID from the error message
+          const match = errorData.reason.match(/\/entity\/(syn\d+)\/acl/)
+          if (match) {
+            aclInheritedFrom = match[1]
+            // Try to fetch the parent's ACL
+            try {
+              const parentAclResponse = await fetch(`${baseUrl}/entity/${aclInheritedFrom}/acl`, {
+                headers: {
+                  'Accept': 'application/json',
+                },
+              })
+              if (parentAclResponse.ok) {
+                const parentAclData = await parentAclResponse.json()
+                accessInfo = {
+                  canView: true,
+                  canEdit: false,
+                  canDownload: false,
+                  accessControlList: parentAclData.resourceAccess || [],
+                }
+              }
+            } catch (parentErr) {
+              // If we can't get parent ACL, but we got the entity, assume we can view
+              accessInfo = {
+                canView: true,
+                canEdit: false,
+                canDownload: false,
+                accessControlList: [],
+              }
+            }
+          } else {
+            // If we got the entity but ACL inherits, assume we can view
+            accessInfo = {
+              canView: true,
+              canEdit: false,
+              canDownload: false,
+              accessControlList: [],
+            }
+          }
+        } else {
+          // If we got the entity but can't get ACL, assume we can view
+          accessInfo = {
+            canView: true,
+            canEdit: false,
+            canDownload: false,
+            accessControlList: [],
+          }
+        }
       }
     } catch (err) {
-      // ACL might not be accessible, that's okay
-      console.error('Error fetching ACL:', err)
+      // If we successfully fetched the entity, we have at least READ access
+      // The fact that we got here means we can view the entity
+      accessInfo = {
+        canView: true,
+        canEdit: false,
+        canDownload: false,
+        accessControlList: [],
+      }
     }
     
     // Fetch access requirements (ACT - Access Control Team requirements)

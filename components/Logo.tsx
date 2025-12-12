@@ -2,9 +2,9 @@
 
 export default function Logo() {
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-3">
       {/* Compass Icon */}
-      <div className="relative w-14 h-14 flex-shrink-0">
+      <div className="relative w-10 h-10 flex-shrink-0">
         <svg
           viewBox="0 0 100 100"
           className="w-full h-full"
@@ -39,15 +39,10 @@ export default function Logo() {
         </svg>
       </div>
       
-      {/* Text - medium blue, uppercase, sans-serif */}
-      <div className="flex flex-col leading-tight">
-        <span className="text-blue-600 font-semibold text-xl uppercase tracking-tight">
-          SYNAPSE
-        </span>
-        <span className="text-blue-600 font-semibold text-xl uppercase tracking-tight">
-          COMPASS
-        </span>
-      </div>
+      {/* Text - medium blue, one line */}
+      <span className="text-blue-600 font-semibold text-lg tracking-tight">
+        Synapse.org Compass
+      </span>
     </div>
   )
 }

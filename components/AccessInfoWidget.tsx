@@ -70,24 +70,45 @@ export default function AccessInfoWidget({ accessInfo, accessRequirements, entit
       }
     }
     
-    // If we can't fetch ACL, assume it might be restricted
+    // If we have access requirements, it's definitely restricted
+    // (This check happens first, before checking ACL)
+    
+    // If we can't fetch ACL but we have access info, check if we can view
+    // If we successfully fetched the entity data, we have at least READ access
     if (!accessInfo) {
+      // If we have access requirements, it's restricted
+      if (accessRequirements && accessRequirements.length > 0) {
+        // This case is already handled above, but just in case
+        return {
+          level: 'Restricted',
+          description: 'This entity requires access approval.',
+          requirements: null,
+          requirementName: null,
+          action: {
+            text: 'Request Access',
+            url: `https://www.synapse.org/#!Synapse:${entityId}`,
+          },
+        }
+      }
+      
+      // If we can't determine, but we got the entity, it's likely accessible
+      // (The fact that we're seeing this means the entity was successfully fetched)
       return {
-        level: 'Unknown',
-        description: 'Access information is not available. Visit the entity on Synapse.org to check access requirements.',
+        level: 'Public',
+        description: 'This entity appears to be accessible. Access information could not be fully determined.',
         requirements: null,
         requirementName: null,
-        action: {
-          text: 'Check Access on Synapse',
-          url: `https://www.synapse.org/#!Synapse:${entityId}`,
-        },
+        action: null,
       }
     }
 
+    // Check ACL for public access
     if (accessInfo.accessControlList && accessInfo.accessControlList.length > 0) {
       const hasPublicAccess = accessInfo.accessControlList.some((acl: any) => 
         acl.principalId === 273948 || // Public user ID
-        acl.accessType?.includes('READ')
+        acl.principalId === '273948' || // Public user ID (string)
+        (Array.isArray(acl.accessType) && acl.accessType.includes('READ')) ||
+        (typeof acl.accessType === 'string' && acl.accessType.includes('READ'))
       )
       
       if (hasPublicAccess) {
@@ -100,6 +121,7 @@ export default function AccessInfoWidget({ accessInfo, accessRequirements, entit
         }
       }
       
+      // Has ACL but no public access - restricted
       return {
         level: 'Restricted',
         description: 'This entity has restricted access. You may need to request access or join a team to view it.',
@@ -112,13 +134,29 @@ export default function AccessInfoWidget({ accessInfo, accessRequirements, entit
       }
     }
 
-    // If ACL is empty, it's likely public
+    // If ACL is empty or doesn't exist, but we successfully fetched the entity
+    // and there are no access requirements, it's likely public
+    // (The fact that we can fetch it without auth suggests public access)
+    if (!accessRequirements || accessRequirements.length === 0) {
+      return {
+        level: 'Public',
+        description: 'This entity appears to be publicly accessible. Anyone can view and download it.',
+        requirements: null,
+        requirementName: null,
+        action: null,
+      }
+    }
+    
+    // If we have access requirements, it's restricted (should have been caught above, but just in case)
     return {
-      level: 'Public',
-      description: 'This entity appears to be publicly accessible. Anyone can view and download it.',
+      level: 'Restricted',
+      description: 'This entity requires access approval.',
       requirements: null,
       requirementName: null,
-      action: null,
+      action: {
+        text: 'Request Access',
+        url: `https://www.synapse.org/#!Synapse:${entityId}`,
+      },
     }
   }
 
