@@ -416,16 +416,31 @@ export async function GET(request: NextRequest) {
             const children = childrenData.page || []
 
             for (const child of children) {
-              // Fetch annotations for this child
+              // Fetch annotations for this child (try both endpoints)
               try {
-                const childAnnotationsResponse = await fetch(`${baseUrl}/entity/${child.id}/annotations2`, {
+                let childAnnotations = null
+                
+                // Try /annotations endpoint first (returns stringAnnotations as object)
+                const annotationsResponse = await fetch(`${baseUrl}/entity/${child.id}/annotations`, {
                   headers: {
                     'Accept': 'application/json',
                   },
                 })
-                if (childAnnotationsResponse.ok) {
-                  const childAnnotations = await childAnnotationsResponse.json()
-                  
+                if (annotationsResponse.ok) {
+                  childAnnotations = await annotationsResponse.json()
+                } else {
+                  // Fallback to annotations2 endpoint
+                  const annotations2Response = await fetch(`${baseUrl}/entity/${child.id}/annotations2`, {
+                    headers: {
+                      'Accept': 'application/json',
+                    },
+                  })
+                  if (annotations2Response.ok) {
+                    childAnnotations = await annotations2Response.json()
+                  }
+                }
+                
+                if (childAnnotations) {
                   // Extract citations and mentions
                   // Check annotations2 format: { annotations: { "citation": { value: [...] }, "mention": { value: [...] } } }
                   if (childAnnotations.annotations) {
@@ -442,7 +457,7 @@ export async function GET(request: NextRequest) {
                   }
                   
                   // Check annotations format: { stringAnnotations: { "citation": [...], "mention": [...] } }
-                  if (childAnnotations.stringAnnotations && typeof childAnnotations.stringAnnotations === 'object') {
+                  if (childAnnotations.stringAnnotations && typeof childAnnotations.stringAnnotations === 'object' && !Array.isArray(childAnnotations.stringAnnotations)) {
                     const stringAnnKeys = Object.keys(childAnnotations.stringAnnotations)
                     for (const key of stringAnnKeys) {
                       const keyLower = key.toLowerCase()
@@ -467,6 +482,7 @@ export async function GET(request: NextRequest) {
                 }
               } catch (err) {
                 // Skip if we can't fetch annotations
+                console.error(`Error fetching annotations for ${child.id}:`, err)
               }
 
               // Recursively fetch children if it's a folder
