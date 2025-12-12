@@ -7,9 +7,7 @@ export default function Logo() {
     <div className="flex items-center gap-2">
       {/* Official Synapse Logo */}
       <a 
-        href="https://www.synapse.org" 
-        target="_blank" 
-        rel="noopener noreferrer"
+        href="https://synapse-compass.org/" 
         className="flex items-center gap-2 hover:opacity-80 transition-opacity"
       >
         <Image

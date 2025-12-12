@@ -62,28 +62,21 @@ function HomeContent() {
   const [generatingDescription, setGeneratingDescription] = useState(false)
   const searchParams = useSearchParams()
 
-  // Check for synId in URL parameter on mount
-  useEffect(() => {
-    const urlSynId = searchParams.get('synId') || searchParams.get('syn')
-    if (urlSynId) {
-      // Extract synId from various formats
-      const extracted = extractSynId(urlSynId)
-      if (extracted) {
-        setSynId(extracted)
-        fetchEntityInfo(extracted)
-      }
-    }
-  }, [searchParams])
-
   // Extract SynID from various input formats
   const extractSynId = (input: string): string | null => {
     // Remove whitespace
     const cleaned = input.trim()
     
-    // Check if it's a full URL
+    // Check for synapse.org URL format: https://www.synapse.org/Synapse:syn51514105
+    const synapseUrlMatch = cleaned.match(/synapse\.org\/Synapse[:\/](syn\d+)/i)
+    if (synapseUrlMatch) {
+      return synapseUrlMatch[1].toLowerCase()
+    }
+    
+    // Check if it's a full URL with synID
     const urlMatch = cleaned.match(/synapse\.org.*[:\/](syn\d+)/i) || cleaned.match(/[:\/](syn\d+)/i)
     if (urlMatch) {
-      return urlMatch[1]
+      return urlMatch[1].toLowerCase()
     }
     
     // Check if it's just the synID (syn1234567)
@@ -123,6 +116,34 @@ function HomeContent() {
       setLoading(false)
     }
   }
+
+  // Check for synId in URL parameter on mount
+  useEffect(() => {
+    // Check URL parameters first
+    const urlSynId = searchParams.get('synId') || searchParams.get('syn')
+    if (urlSynId) {
+      const extracted = extractSynId(urlSynId)
+      if (extracted) {
+        setSynId(extracted)
+        fetchEntityInfo(extracted)
+        return
+      }
+    }
+    
+    // Also check if the pathname contains Synapse:synID format
+    // e.g., /Synapse:syn51514105
+    if (typeof window !== 'undefined') {
+      const pathMatch = window.location.pathname.match(/\/Synapse[:\/](syn\d+)/i)
+      if (pathMatch) {
+        const extracted = pathMatch[1].toLowerCase()
+        setSynId(extracted)
+        fetchEntityInfo(extracted)
+        // Update URL to clean format
+        window.history.replaceState({}, '', `/?synId=${extracted}`)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   const generateAiDescription = async (data: EntityData) => {
     setGeneratingDescription(true)
@@ -212,6 +233,40 @@ function HomeContent() {
           <div className="text-center py-16">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-blue-600 mb-4"></div>
             <p className="text-gray-600 text-sm">Fetching entity information...</p>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!entityData && !loading && !error && !synId && (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="mb-6">
+              <div className="w-24 h-24 mx-auto mb-4 flex items-center justify-center">
+                <svg className="w-full h-full text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-2">Welcome to Synapse Compass</h2>
+              <p className="text-gray-600 mb-8 max-w-md">
+                Enter a Synapse entity ID to explore its context, access information, and project structure.
+              </p>
+            </div>
+            <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 max-w-lg w-full">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">How to use:</h3>
+              <ul className="text-sm text-gray-600 space-y-2 text-left">
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-0.5">•</span>
+                  <span>Enter a SynID in the search bar (e.g., <code className="bg-gray-200 px-1.5 py-0.5 rounded font-mono text-xs">syn7208917</code>)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-0.5">•</span>
+                  <span>Or paste a Synapse URL (e.g., <code className="bg-gray-200 px-1.5 py-0.5 rounded font-mono text-xs">https://www.synapse.org/Synapse:syn51514105</code>)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-0.5">•</span>
+                  <span>View entity information, access levels, project structure, and more</span>
+                </li>
+              </ul>
+            </div>
           </div>
         )}
 
