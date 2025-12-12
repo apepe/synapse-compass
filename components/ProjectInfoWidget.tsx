@@ -1,5 +1,8 @@
 'use client'
 
+import { useState, useEffect } from 'react'
+import TypingDescription from '@/components/TypingDescription'
+
 interface ProjectInfoWidgetProps {
   projectId: string | null
   projectName: string | null
@@ -10,6 +13,37 @@ interface ProjectInfoWidgetProps {
 }
 
 export default function ProjectInfoWidget({ projectId, projectName, projectWiki, projectAnnotations, projectCitations, googleScholarMentions }: ProjectInfoWidgetProps) {
+  const [projectSummary, setProjectSummary] = useState<string | null>(null)
+  const [generatingSummary, setGeneratingSummary] = useState(false)
+
+  // Generate project summary from wiki
+  useEffect(() => {
+    if (projectWiki && projectName) {
+      setGeneratingSummary(true)
+      fetch('/api/generate-project-summary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          projectName,
+          projectWiki,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.summary) {
+            setProjectSummary(data.summary)
+          }
+        })
+        .catch((err) => {
+          console.error('Error generating project summary:', err)
+        })
+        .finally(() => {
+          setGeneratingSummary(false)
+        })
+    }
+  }, [projectWiki, projectName])
   // Extract DOI from project annotations
   const projectDoi = projectAnnotations?.stringAnnotations?.find((ann: any) => 
     ann.key && (ann.key.toLowerCase() === 'doi' || ann.key.toLowerCase() === 'doi')
@@ -45,6 +79,20 @@ export default function ProjectInfoWidget({ projectId, projectName, projectWiki,
           <div className="text-sm font-medium text-gray-700 mb-1">Project ID</div>
           <div className="text-sm text-gray-600 font-mono">{projectId}</div>
         </div>
+
+        {/* About - Project Summary */}
+        {(projectSummary || generatingSummary) && (
+          <div>
+            <div className="text-sm font-medium text-gray-700 mb-2">About</div>
+            <div className="text-sm text-gray-600 leading-relaxed">
+              {generatingSummary ? (
+                <p className="text-gray-500">Generating summary...</p>
+              ) : projectSummary ? (
+                <TypingDescription text={projectSummary} />
+              ) : null}
+            </div>
+          </div>
+        )}
 
         {/* Project DOI */}
         {projectDoi && (
