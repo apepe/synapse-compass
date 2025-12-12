@@ -11,6 +11,11 @@ interface Entity {
   isParent?: boolean
 }
 
+type EntityWithFlags = Entity & {
+  isCurrent?: boolean
+  isParent?: boolean
+}
+
 interface FolderTreeProps {
   currentEntityId: string
   currentEntityName: string
@@ -82,17 +87,17 @@ export default function FolderTree({
     }
   }
 
-  const allItems = [
-    ...(parentId ? [{
+  const allItems: EntityWithFlags[] = [
+    ...(parentId && parentName ? [{
       id: parentId,
-      name: parentName || 'Parent Folder',
+      name: parentName,
       type: 'org.sagebionetworks.repo.model.Folder',
       isParent: true,
-    }] : []),
+    } as EntityWithFlags] : []),
     ...siblings.map(s => ({
       ...s,
       isCurrent: s.id === currentEntityId,
-    })),
+    } as EntityWithFlags)),
   ]
 
   // Group items by type for better organization

@@ -250,40 +250,40 @@ export async function GET(request: NextRequest) {
       
       // Fetch wiki content for the project if we found one
       if (projectId) {
-      try {
-        const wikiListResponse = await fetch(`${baseUrl}/entity/${projectId}/wiki2`, {
-          headers: {
-            'Accept': 'application/json',
-          },
-        })
-        
-        if (wikiListResponse.ok) {
-          const wikiListData = await wikiListResponse.json()
-          if (wikiListData && wikiListData.id) {
-            const wikiResponse = await fetch(
-              `${baseUrl}/entity/${projectId}/wiki/${wikiListData.id}`,
-              {
-                headers: {
-                  'Accept': 'application/json',
-                },
-              }
-            )
-            
-            if (wikiResponse.ok) {
-              const wikiData = await wikiResponse.json()
-              if (wikiData.markdown) {
-                projectWiki = wikiData.markdown
+        try {
+          const wikiListResponse = await fetch(`${baseUrl}/entity/${projectId}/wiki2`, {
+            headers: {
+              'Accept': 'application/json',
+            },
+          })
+          
+          if (wikiListResponse.ok) {
+            const wikiListData = await wikiListResponse.json()
+            if (wikiListData && wikiListData.id) {
+              const wikiResponse = await fetch(
+                `${baseUrl}/entity/${projectId}/wiki/${wikiListData.id}`,
+                {
+                  headers: {
+                    'Accept': 'application/json',
+                  },
+                }
+              )
+              
+              if (wikiResponse.ok) {
+                const wikiData = await wikiResponse.json()
+                if (wikiData.markdown) {
+                  projectWiki = wikiData.markdown
+                }
               }
             }
           }
+        } catch (wikiErr) {
+          console.error('Error fetching wiki:', wikiErr)
         }
-      } catch (wikiErr) {
-        console.error('Error fetching wiki:', wikiErr)
       }
-    }
-    
-    // Fetch children of the direct parent folder
-    if (parentId) {
+      
+      // Fetch children of the direct parent folder
+      if (parentId) {
       try {
         // Fetch children of the parent folder using POST endpoint
         const childrenResponse = await fetch(`${baseUrl}/entity/children`, {
