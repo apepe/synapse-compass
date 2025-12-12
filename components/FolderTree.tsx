@@ -197,7 +197,7 @@ export default function FolderTree({
 
         {!expanded && (
           <div className="text-center py-8 text-gray-500 text-sm">
-            Click "Expand" to view project structure
+            Click &quot;Expand&quot; to view project structure
           </div>
         )}
       </div>

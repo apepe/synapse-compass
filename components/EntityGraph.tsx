@@ -10,6 +10,8 @@ interface EntityNode {
   type: string
   isCurrent?: boolean
   isParent?: boolean
+  x?: number
+  y?: number
 }
 
 interface EntityGraphProps {
@@ -205,10 +207,6 @@ export default function EntityGraph({
           )
         }}
         cooldownTicks={150}
-        d3Force={(d3: any) => {
-          d3.force('charge').strength(-300)
-          d3.force('link').distance(120)
-        }}
         onEngineStop={() => {
           // Graph has stabilized
         }}
