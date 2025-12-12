@@ -7,6 +7,7 @@ import TypingDescription from '@/components/TypingDescription'
 import CreatorInfoWidget from '@/components/CreatorInfoWidget'
 import AccessInfoWidget from '@/components/AccessInfoWidget'
 import ProjectInfoWidget from '@/components/ProjectInfoWidget'
+import EntityAnnotationsWidget from '@/components/EntityAnnotationsWidget'
 import Logo from '@/components/Logo'
 import ShareButton from '@/components/ShareButton'
 
@@ -285,17 +286,20 @@ function HomeContent() {
               />
             </div>
 
-            {/* Project Information */}
-            {entityData.projectId && (
-              <ProjectInfoWidget
-                projectId={entityData.projectId}
-                projectName={entityData.projectName}
-                projectWiki={entityData.projectWiki}
-                projectAnnotations={entityData.projectAnnotations}
-                projectCitations={entityData.projectCitations}
-                googleScholarMentions={entityData.googleScholarMentions}
-              />
-            )}
+            {/* Project Information and Entity Annotations */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {entityData.projectId && (
+                <ProjectInfoWidget
+                  projectId={entityData.projectId}
+                  projectName={entityData.projectName}
+                  projectWiki={entityData.projectWiki}
+                  projectAnnotations={entityData.projectAnnotations}
+                  projectCitations={entityData.projectCitations}
+                  googleScholarMentions={entityData.googleScholarMentions}
+                />
+              )}
+              <EntityAnnotationsWidget annotations={entityData.annotations} />
+            </div>
 
             {/* Folder Tree Visualization */}
             <FolderTree
