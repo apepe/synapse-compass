@@ -239,7 +239,6 @@ export default function CreatorInfoWidget({ creatorInfo, createdOn, modifiedOn, 
           <div className="text-sm text-gray-500">No additional information available</div>
         )}
       </div>
-      </div>
     </div>
   )
 }

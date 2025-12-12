@@ -15,6 +15,7 @@ interface CreatorInfo {
   userName: string
   displayName: string | null
   profilePicUrl: string | null
+  affiliation: string | null
 }
 
 interface AccessInfo {
