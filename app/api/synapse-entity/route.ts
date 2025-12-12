@@ -509,14 +509,35 @@ export async function GET(request: NextRequest) {
         })
         if (entityAnnotationsResponse.ok) {
           const entityAnnotations = await entityAnnotationsResponse.json()
+          
+          // Check stringAnnotations format
           if (entityAnnotations.stringAnnotations && typeof entityAnnotations.stringAnnotations === 'object' && !Array.isArray(entityAnnotations.stringAnnotations)) {
             const stringAnnKeys = Object.keys(entityAnnotations.stringAnnotations)
+            // Check for various possible citation/mention key formats
             for (const key of stringAnnKeys) {
               const keyLower = key.toLowerCase()
-              if (keyLower === 'citation' || keyLower === 'mention') {
+              if (keyLower === 'citation' || keyLower === 'mention' || 
+                  keyLower === 'citations' || keyLower === 'mentions' ||
+                  keyLower.includes('citation') || keyLower.includes('mention')) {
                 const values = entityAnnotations.stringAnnotations[key]
                 if (Array.isArray(values) && values.length > 0) {
                   projectCitations.push(...values)
+                }
+              }
+            }
+          }
+          
+          // Also check annotations2 format
+          if (entityAnnotations.annotations) {
+            const annotationKeys = Object.keys(entityAnnotations.annotations)
+            for (const key of annotationKeys) {
+              const keyLower = key.toLowerCase()
+              if (keyLower === 'citation' || keyLower === 'mention' || 
+                  keyLower === 'citations' || keyLower === 'mentions' ||
+                  keyLower.includes('citation') || keyLower.includes('mention')) {
+                const ann = entityAnnotations.annotations[key]
+                if (ann && ann.value && Array.isArray(ann.value) && ann.value.length > 0) {
+                  projectCitations.push(...ann.value)
                 }
               }
             }
