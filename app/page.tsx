@@ -47,6 +47,7 @@ interface EntityData {
   projectWiki: string | null
   projectAnnotations: Record<string, any> | null
   projectCitations: string[]
+  googleScholarMentions: number | null
   siblings: Array<{ id: string; name: string; type: string }>
   synapseUrl: string
 }
@@ -292,6 +293,7 @@ function HomeContent() {
                 projectWiki={entityData.projectWiki}
                 projectAnnotations={entityData.projectAnnotations}
                 projectCitations={entityData.projectCitations}
+                googleScholarMentions={entityData.googleScholarMentions}
               />
             )}
 

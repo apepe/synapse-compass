@@ -6,9 +6,10 @@ interface ProjectInfoWidgetProps {
   projectWiki: string | null
   projectAnnotations: Record<string, any> | null
   projectCitations: string[]
+  googleScholarMentions: number | null
 }
 
-export default function ProjectInfoWidget({ projectId, projectName, projectWiki, projectAnnotations, projectCitations }: ProjectInfoWidgetProps) {
+export default function ProjectInfoWidget({ projectId, projectName, projectWiki, projectAnnotations, projectCitations, googleScholarMentions }: ProjectInfoWidgetProps) {
   // Extract a summary from the wiki (first paragraph or first few sentences)
   const getProjectSummary = (wiki: string | null) => {
     if (!wiki) return null
@@ -92,11 +93,34 @@ export default function ProjectInfoWidget({ projectId, projectName, projectWiki,
           </div>
         )}
 
-        {/* Project Citations and Mentions */}
+        {/* Google Scholar Mentions */}
+        {googleScholarMentions !== null && projectId && (
+          <div>
+            <div className="text-sm font-medium text-gray-700 mb-2">Mentions</div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">
+                {googleScholarMentions > 0 ? `${googleScholarMentions} mentions found on` : 'Check mentions on'}
+              </span>
+              <a
+                href={`https://scholar.google.com/scholar?hl=en&as_sdt=0%2C33&q=${projectId}&btnG=`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-700 hover:underline text-sm font-medium"
+              >
+                Google Scholar
+              </a>
+              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </div>
+          </div>
+        )}
+
+        {/* Project Citations (from annotations) - only show if we have citations from annotations */}
         {uniqueCitations.length > 0 && (
           <div>
             <div className="text-sm font-medium text-gray-700 mb-2">
-              Citations & Mentions ({uniqueCitations.length})
+              Citations ({uniqueCitations.length})
             </div>
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {uniqueCitations.map((citation, index) => (

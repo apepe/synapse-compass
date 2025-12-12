@@ -392,6 +392,45 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      // Helper function to fetch Google Scholar mention count
+      const fetchGoogleScholarMentions = async (synId: string): Promise<number | null> => {
+        try {
+          // Google Scholar doesn't have a public API, so we'll try to fetch the search results page
+          // and parse the count. However, this is fragile and may be blocked.
+          // For now, we'll return null and let the frontend show a link
+          // In a production environment, you might want to use a scraping service or cache results
+          
+          // Try to fetch Google Scholar search results
+          const scholarUrl = `https://scholar.google.com/scholar?hl=en&as_sdt=0%2C33&q=${synId}&btnG=`
+          const response = await fetch(scholarUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            },
+          })
+          
+          if (response.ok) {
+            const html = await response.text()
+            // Try to extract the result count from the HTML
+            // Google Scholar shows "About X results" or similar
+            const aboutMatch = html.match(/About\s+([\d,]+)\s+results/i)
+            if (aboutMatch) {
+              return parseInt(aboutMatch[1].replace(/,/g, ''), 10)
+            }
+            
+            // Try alternative format: "X results"
+            const resultsMatch = html.match(/([\d,]+)\s+results/i)
+            if (resultsMatch) {
+              return parseInt(resultsMatch[1].replace(/,/g, ''), 10)
+            }
+          }
+        } catch (err) {
+          // If we can't fetch, return null - the frontend will still show the link
+          console.error('Error fetching Google Scholar mentions:', err)
+        }
+        
+        return null
+      }
+
       // Helper function to recursively fetch all children and their citations
       const fetchAllChildrenCitations = async (parentId: string, depth: number = 0, maxDepth: number = 3): Promise<string[]> => {
         if (depth > maxDepth) return []
@@ -613,6 +652,7 @@ export async function GET(request: NextRequest) {
       projectWiki: projectWiki,
       projectAnnotations: projectAnnotations,
       projectCitations: projectCitations,
+      googleScholarMentions: projectId ? await fetchGoogleScholarMentions(projectId) : null,
       siblings: siblings,
       synapseUrl: `https://www.synapse.org/#!Synapse:${synId}`,
     })
